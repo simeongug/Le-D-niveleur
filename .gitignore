@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Données téléchargées ou calculées : jamais dans le repo (trop lourdes, régénérables)
+data/
+*.osm.pbf
+*.tif
+
+# Itinéraires générés en local
+sorties/
+*.gpx
+!tests/**/*.gpx
+
+# Divers
+.DS_Store
+.env

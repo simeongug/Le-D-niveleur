@@ -4,12 +4,18 @@ build-backend = "hatchling.build"
 
 [project]
 name = "deniveleur"
-version = "0.1.0"
+version = "0.2.0"
 description = "Générateur de boucles trail à dénivelé positif maximal ou ciblé, avec export GPX."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Siméon" }]
-dependencies = []
+dependencies = [
+    "numpy>=2.0",
+    "osmium>=4.0",
+    "pyproj>=3.6",
+    "tifffile>=2024.1",
+    "matplotlib>=3.8",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
@@ -19,6 +25,9 @@ deniveleur = "deniveleur.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/deniveleur"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/deniveleur/config/parametres.toml" = "deniveleur/config/parametres.toml"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

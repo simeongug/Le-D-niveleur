@@ -17,7 +17,7 @@ La référence à battre est un tracé fait à la main : 25,1 km pour 579 m de D
 | Étape | Contenu | État |
 |---|---|---|
 | 1 | Cadrage : repo, vérifications automatiques, décisions d'architecture | ✅ |
-| 2 | Données : chemins OpenStreetMap + altitude IGN pour l'Île-de-France | à venir |
+| 2 | Données : chemins OpenStreetMap + altitude IGN, secteur Saint-Cloud / Meudon | ✅ |
 | 3 | Moteur en ligne de commande : boucle à D+ maximal, export GPX | à venir |
 | 4 | D+ cible et estimation du temps de parcours | à venir |
 | 5 | API + interface web utilisable sur téléphone | à venir |
@@ -26,6 +26,17 @@ La référence à battre est un tracé fait à la main : 25,1 km pour 579 m de D
 | 8 | Options : connexion Strava, autres régions, hébergement public | à venir |
 
 Le détail est dans [docs/feuille-de-route.md](docs/feuille-de-route.md).
+
+## Ce que ça donne aujourd'hui
+
+Le réseau de chemins du secteur Saint-Cloud / Sèvres / Meudon / Chaville /
+Ville-d'Avray est construit : 3 984 km de voies, dont 20 % de chemin, avec l'altitude
+de chaque tronçon. Voici la carte de contrôle, colorée selon la pente :
+
+![Carte des pentes autour du parc de Saint-Cloud](docs/images/carte-pentes.jpg)
+
+Notre calcul de D+ a été comparé à Strava sur quatre sorties réelles : +2 % au total,
+7 % d'écart moyen ([détail](docs/validation-denivele.md)).
 
 ## Essayer
 
@@ -37,12 +48,15 @@ cd Le-D-niveleur
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-deniveleur --version     # affiche la version
-deniveleur regions       # liste les régions couvertes
+deniveleur donnees tout              # télécharge les données, construit le réseau, dessine la carte
+deniveleur denivele ma-sortie.gpx    # D+ d'un tracé GPX d'après notre modèle d'altitude
 ```
 
-À ce stade la commande ne génère pas encore d'itinéraire : elle prouve seulement que
-l'installation fonctionne.
+Le premier lancement télécharge environ 500 Mo et prend quelques minutes. La carte est
+écrite dans `sorties/carte-pentes.png`. Les autres commandes sont décrites dans
+[docs/donnees.md](docs/donnees.md).
+
+À ce stade la commande ne génère pas encore d'itinéraire : c'est l'étape 3.
 
 ## Vérifications automatiques
 
@@ -62,9 +76,10 @@ pytest
 
 ```
 src/deniveleur/     le code de l'application
+src/deniveleur/config/parametres.toml   tous les réglages
 tests/              les tests automatiques
 docs/decisions/     les choix d'architecture et leurs raisons
-docs/               la feuille de route
+docs/               la feuille de route, les données, la validation du D+
 .github/workflows/  les vérifications automatiques
 ```
 
@@ -73,10 +88,11 @@ docs/               la feuille de route
 1. [Python comme langage](docs/decisions/0001-langage-python.md)
 2. [Un réseau de chemins préparé à l'avance](docs/decisions/0002-reseau-prepare-a-l-avance.md)
 3. [Un moteur indépendant de l'interface et des régions](docs/decisions/0003-moteur-independant.md)
+4. [Altitude à 2 m et réseau enregistré en tableaux](docs/decisions/0004-altitude-et-format-du-reseau.md)
 
 ## Données
 
 - Chemins : © les contributeurs d'[OpenStreetMap](https://www.openstreetmap.org/copyright), licence ODbL.
-- Altitude : IGN, RGE ALTI®, Licence Ouverte Etalab 2.0.
+- Altitude et fond de carte : IGN (RGE ALTI®, Plan IGN), Licence Ouverte Etalab 2.0.
 
 Le projet n'utilise pas la carte de chaleur de Strava.

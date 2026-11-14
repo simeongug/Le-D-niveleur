@@ -1,0 +1,57 @@
+# Paramètres du Déniveleur.
+# Tout ce qui se règle est ici : aucune valeur « magique » dans le code.
+
+[zones.saint-cloud-meudon]
+nom = "Saint-Cloud / Sèvres / Meudon / Chaville / Ville-d'Avray"
+region = "ile-de-france"
+# Emprise en Lambert-93 (mètres) : ouest, sud, est, nord. Multiples de la taille des dalles.
+emprise_l93 = [636000, 6852000, 648000, 6864000]
+
+[osm]
+# Geofabrik publie un extrait par jour ; « latest » est résolu vers la version datée.
+url_base = "https://download.geofabrik.de/europe/france"
+fichier = "ile-de-france-latest.osm.pbf"
+# Types de voies gardés (tag OSM « highway »).
+voies = [
+  "path", "footway", "track", "steps", "pedestrian", "bridleway", "cycleway",
+  "living_street", "residential", "service", "unclassified", "tertiary",
+  "secondary", "primary", "tertiary_link", "secondary_link", "primary_link",
+]
+# Valeurs qui interdisent le passage à pied.
+acces_interdit = ["private", "no", "customers", "delivery", "military", "permit"]
+# Types de voies considérés comme du chemin (par opposition au bitume) quand la
+# surface n'est pas renseignée.
+voies_chemin = ["path", "track", "bridleway"]
+surfaces_dures = [
+  "asphalt", "paved", "concrete", "concrete:plates", "concrete:lanes",
+  "paving_stones", "sett", "cobblestone", "unhewn_cobblestone", "metal", "wood",
+]
+
+[altitude]
+# Service IGN (Géoplateforme) : RGE ALTI, altitude du sol.
+url = "https://data.geopf.fr/wms-r"
+couche = "ELEVATION.ELEVATIONGRIDCOVERAGE.HIGHRES"
+# Taille d'un pixel en mètres. Le RGE ALTI est natif à 1 m ; 2 m suffit pour des
+# chemins et divise le volume par 4.
+resolution_m = 2
+# Côté d'une dalle en mètres.
+taille_dalle_m = 2000
+# En dessous de cette valeur, le pixel est considéré comme « sans donnée ».
+altitude_min_valide = -100
+
+[profil]
+# Distance entre deux points d'altitude le long d'un chemin.
+pas_m = 5
+# Largeur de la moyenne glissante qui lisse le profil.
+lissage_m = 30
+# Une montée ne compte que si elle dépasse ce seuil (filtre le bruit).
+hysteresis_m = 2
+
+[carte]
+url_fond = "https://data.geopf.fr/wms-r"
+couche_fond = "GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"
+# Taille de l'image en pixels (côté le plus long).
+taille_px = 3000
+# Bornes de pente (en %) pour les couleurs : plat, faux plat, côte, raide, mur.
+paliers_pente = [3, 6, 10, 15]
+couleurs = ["#2e9e4f", "#b5cf2d", "#f5b400", "#f0641e", "#c4002f"]

@@ -7,14 +7,15 @@ Chaque étape se termine par quelque chose de concret à lancer et à voir.
 Repo, README, vérifications automatiques, trois décisions d'architecture.
 **Résultat :** une coche verte sur GitHub et la commande `deniveleur --version`.
 
-## 2. Données
+## 2. Données ✅
 
-Télécharger les chemins OpenStreetMap et l'altitude IGN (RGE ALTI) de l'Île-de-France,
-puis les assembler en un réseau de chemins où chaque tronçon connaît sa longueur, sa
-montée et sa descente.
-**Résultat :** une commande qui affiche, pour le secteur Saint-Cloud / Sèvres / Meudon,
-le nombre de kilomètres de chemins et le D+ de quelques côtes connues, à comparer au
-terrain.
+Télécharger les chemins OpenStreetMap et l'altitude IGN (RGE ALTI), puis les assembler
+en un réseau de chemins où chaque tronçon connaît sa longueur, sa montée et sa descente.
+Fait pour le secteur Saint-Cloud / Sèvres / Meudon / Chaville / Ville-d'Avray ; le
+reste de l'Île-de-France viendra à l'étape 8.
+**Résultat :** la commande `deniveleur donnees tout`, une carte des chemins colorés par
+la pente, et un D+ comparé à Strava sur quatre sorties (+2 % au total, voir
+[validation-denivele.md](validation-denivele.md)).
 
 ## 3. Moteur en ligne de commande
 

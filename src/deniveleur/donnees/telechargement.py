@@ -6,6 +6,7 @@ des données reproductible et vérifiable.
 """
 
 import hashlib
+import http.client
 import json
 import logging
 import shutil
@@ -19,6 +20,8 @@ journal = logging.getLogger(__name__)
 
 AGENT = "deniveleur (https://github.com/simeongug/Le-D-niveleur)"
 DELAI_S = 600
+# Erreurs de réseau après lesquelles on réessaie (coupure, réponse tronquée…).
+ERREURS_RESEAU = (urllib.error.URLError, OSError, http.client.HTTPException)
 
 
 def ouvrir(url: str, suivre_redirections: bool = True) -> Any:
@@ -34,14 +37,14 @@ def ouvrir(url: str, suivre_redirections: bool = True) -> Any:
 
 
 def variantes(url: str) -> list[str]:
-    """L'adresse demandée, puis sa version http si la connexion https échoue.
+    """Adresses à essayer dans l'ordre : deux fois celle demandée, puis sa version http.
 
     Certains réseaux coupent le https vers Geofabrik. Le repli en http reste
     sûr parce que l'empreinte du fichier est vérifiée après coup.
     """
     if url.startswith("https://"):
-        return [url, "http://" + url.removeprefix("https://")]
-    return [url]
+        return [url, url, "http://" + url.removeprefix("https://")]
+    return [url, url]
 
 
 def lire(url: str) -> bytes:
@@ -50,7 +53,7 @@ def lire(url: str) -> bytes:
         try:
             with ouvrir(candidate) as reponse:
                 return bytes(reponse.read())
-        except (urllib.error.URLError, OSError) as exc:
+        except ERREURS_RESEAU as exc:
             erreur = exc
             journal.debug("Échec sur %s : %s", candidate, exc)
     raise ConnectionError(f"Téléchargement impossible : {url} ({erreur})")
@@ -67,7 +70,7 @@ def telecharger(url: str, destination: Path) -> str:
                 shutil.copyfileobj(reponse, sortie, length=1 << 20)
             provisoire.replace(destination)
             return candidate
-        except (urllib.error.URLError, OSError) as exc:
+        except ERREURS_RESEAU as exc:
             erreur = exc
             journal.debug("Échec sur %s : %s", candidate, exc)
     provisoire.unlink(missing_ok=True)

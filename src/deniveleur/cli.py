@@ -1,8 +1,7 @@
 """Ligne de commande du Déniveleur.
 
-À l'étape 2, elle prépare les données (chemins + altitude), dessine la carte de
-contrôle et mesure le D+ d'un tracé existant. La génération d'itinéraires
-arrive à l'étape 3.
+Elle prépare les données (chemins + altitude), dessine la carte de contrôle,
+mesure le D+ d'un tracé existant et génère des boucles à D+ maximal.
 """
 
 import argparse
@@ -37,6 +36,21 @@ def construire_analyseur() -> argparse.ArgumentParser:
     donnees.add_argument("--centre", help="carte : centre « latitude,longitude » d'un zoom")
     donnees.add_argument("--rayon", type=float, default=2.0, help="carte : rayon du zoom en km")
     donnees.add_argument("--sortie", type=Path, help="carte : fichier image à écrire")
+
+    boucle = commandes.add_parser("boucle", help="génère une boucle à D+ maximal")
+    boucle.add_argument("--depart", required=True, help="point de départ « latitude,longitude »")
+    boucle.add_argument("--distance", type=float, required=True, help="distance visée, en km")
+    boucle.add_argument("--tolerance", type=float, help="tolérance sur la distance, en %% (5)")
+    boucle.add_argument("--temps", type=float, help="temps de recherche, en secondes (25)")
+    boucle.add_argument("--propositions", type=int, default=1, help="nombre de boucles voulues")
+    boucle.add_argument(
+        "--chemin-min", type=float, default=0, help="part minimale de sentier ou piste, en %%"
+    )
+    boucle.add_argument("--sans-escaliers", action="store_true", help="évite les escaliers")
+    boucle.add_argument("--graine", type=int, default=0, help="change le tirage au hasard")
+    boucle.add_argument("--sortie", type=Path, default=Path("sorties"), help="dossier de sortie")
+    boucle.add_argument("--sans-carte", action="store_true", help="n'écrit que le GPX")
+    _options_communes(boucle)
 
     denivele = commandes.add_parser("denivele", help="mesure le D+ d'un fichier GPX")
     denivele.add_argument("gpx", type=Path, help="fichier GPX à mesurer")
@@ -149,6 +163,81 @@ def mesurer_gpx(gpx: Path, zone: str, dossier: Path) -> None:
     print(f"Altitude : de {mesure.altitude_min_m:.0f} m à {mesure.altitude_max_m:.0f} m")
 
 
+def generer_boucles(options: argparse.Namespace) -> int:
+    from deniveleur import carte, gpx, moteur
+    from deniveleur.reseau import Reseau
+
+    reglages = parametres.charger()
+    latitude, longitude = (float(v) for v in options.depart.split(","))
+    reseau = Reseau.charger(options.donnees / options.zone)
+    boucles, rapport = moteur.generer(
+        reseau,
+        reglages,
+        latitude,
+        longitude,
+        options.distance * 1000,
+        tolerance=None if options.tolerance is None else options.tolerance / 100,
+        budget_s=options.temps,
+        graine=options.graine,
+        propositions=options.propositions,
+        chemin_min=options.chemin_min / 100,
+        escaliers=False if options.sans_escaliers else None,
+    )
+    if not boucles:
+        print("Aucune boucle valide trouvée. Essayer une autre distance ou plus de temps.")
+        return 1
+    if rapport.ecart_depart_m > 50:
+        print(f"Départ déplacé de {rapport.ecart_depart_m:.0f} m vers le chemin le plus proche.")
+    for rang, boucle in enumerate(boucles, 1):
+        nom = f"boucle-{boucle.distance_m / 1000:.0f}km-{boucle.dplus_m:.0f}m"
+        if len(boucles) > 1:
+            nom += f"-{rang}"
+        titre = (
+            f"Le Déniveleur — {boucle.distance_m / 1000:.1f} km, D+ {boucle.dplus_m:.0f} m, "
+            f"{boucle.part_chemin * 100:.0f} % de chemin"
+        )
+        fichier = gpx.ecrire(boucle, options.sortie / f"{nom}.gpx", titre)
+        print(
+            f"\nProposition {rang} : {boucle.distance_m / 1000:.1f} km, D+ {boucle.dplus_m:.0f} m"
+        )
+        print(
+            f"  D− {boucle.dmoins_m:.0f} m, altitude de {boucle.altitude_min_m:.0f} à "
+            f"{boucle.altitude_max_m:.0f} m, {boucle.part_chemin * 100:.0f} % de chemin"
+        )
+        print(f"  {len(boucle.montees)} montées principales :")
+        for montee in boucle.montees:
+            print(
+                f"    {montee.numero:>2}. km {montee.debut_m / 1000:4.1f}  "
+                f"+{montee.denivele_m:3.0f} m sur {montee.longueur_m:4.0f} m  "
+                f"(moy. {montee.pente_moyenne_pct:4.1f} %, max {montee.pente_max_pct:4.1f} %)  "
+                f"{montee.nom}"
+            )
+        for alerte in boucle.alertes:
+            print(f"  ⚠ {alerte}")
+        print(f"  GPX : {fichier}")
+        if not options.sans_carte:
+            marge = 300
+            emprise = (
+                round(boucle.x.min() - marge),
+                round(boucle.y.min() - marge),
+                round(boucle.x.max() + marge),
+                round(boucle.y.max() + marge),
+            )
+            reglages_carte = {**reglages["carte"], "taille_px": 2000}
+            fond = carte.telecharger_fond(
+                reglages_carte, emprise, options.donnees / options.zone / f"fond_{nom}.png"
+            )
+            image = carte.dessiner_boucle(
+                boucle, reglages["carte"], options.sortie / f"{nom}.png", fond, emprise, titre
+            )
+            print(f"  Carte : {image}")
+    print(
+        f"\nRecherche : {rapport.duree_s:.0f} s, {rapport.constructions} boucles construites, "
+        f"{rapport.valides} valides."
+    )
+    return 0
+
+
 def main(arguments: Sequence[str] | None = None) -> int:
     analyseur = construire_analyseur()
     options = analyseur.parse_args(arguments)
@@ -164,6 +253,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
             dessiner_carte(
                 options.zone, options.donnees, options.centre, options.rayon, options.sortie
             )
+    elif options.commande == "boucle":
+        return generer_boucles(options)
     elif options.commande == "denivele":
         mesurer_gpx(options.gpx, options.zone, options.donnees)
     else:

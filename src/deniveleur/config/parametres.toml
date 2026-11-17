@@ -38,6 +38,10 @@ resolution_m = 2
 taille_dalle_m = 2000
 # En dessous de cette valeur, le pixel est considéré comme « sans donnée ».
 altitude_min_valide = -100
+# Le service renvoie parfois une dalle incomplète : nombre d'essais, et pause (multipliée
+# par le numéro de l'essai) entre deux essais.
+essais_par_dalle = 4
+pause_entre_essais_s = 5
 
 [profil]
 # Distance entre deux points d'altitude le long d'un chemin.
@@ -132,6 +136,15 @@ retours_arriere_max = 40
 # mètre de sentier, pour orienter la recherche vers les chemins.
 prime_chemin_par_m = 0.03
 
+# --- D+ cible ---
+# Poids du dénivelé dans le choix des étapes, tiré au hasard dans cette fourchette
+# (négatif = on évite les côtes).
+poids_vertical_cible = [-0.4, 1.0]
+# À écart égal avec la cible, une boucle 100 % sentier vaut ce nombre de mètres de mieux.
+cible_bonus_chemin_m = 15
+# Au-delà de cet écart (part de la cible), on prévient que la cible n'est pas tenue.
+cible_ecart_alerte_part = 0.1
+
 # --- Retour au départ ---
 # Pour rentrer, les tronçons déjà pris comptent cette fois plus longs, et ceux qui
 # les longent (au moins cette part de leurs cases) aussi.
@@ -156,3 +169,24 @@ denivele_min_m = 15
 replat_max_m = 6
 # Fenêtre de mesure de la pente maximale.
 fenetre_pente_m = 50
+
+[temps]
+# Estimation simple : chaque tranche de ce nombre de mètres de D+ compte comme un
+# kilomètre de plat de plus (règle courante en trail : 100 m de D+ ≈ 1 km).
+dplus_par_km_effort_m = 100
+# Allure à plat par défaut, en secondes par kilomètre (6:00 /km).
+allure_plat_s_par_km = 360
+
+[site]
+# Temps de recherche par demande, en secondes.
+budget_s = 25
+# Temps de préparation prévu en plus (pour la barre d'avancement).
+preparation_prevue_s = 3
+# Au-delà de ce nombre de demandes en attente, les nouvelles sont refusées.
+file_max = 10
+# Nombre de calculs gardés en mémoire (pour pouvoir retélécharger les GPX).
+calculs_gardes = 200
+# Espacement des points envoyés à la page (le GPX, lui, garde tous les points).
+pas_trace_m = 20
+# Point de départ proposé à l'ouverture : rue Dailly, Saint-Cloud.
+depart_defaut = [48.8428, 2.2215]

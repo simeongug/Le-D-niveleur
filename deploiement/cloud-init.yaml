@@ -1,0 +1,6 @@
+#cloud-config
+# À coller dans Oracle Cloud, au moment de créer le serveur :
+# « Show advanced options » → « Management » → « Paste cloud-init script ».
+# Le serveur installe alors Le Déniveleur tout seul au premier démarrage (~10 min).
+runcmd:
+  - [bash, -c, "curl -fsSL https://raw.githubusercontent.com/simeongug/Le-D-niveleur/main/deploiement/installer.sh | bash"]

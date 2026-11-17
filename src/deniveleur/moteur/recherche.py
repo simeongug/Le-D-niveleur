@@ -40,6 +40,9 @@ class Guide:
     sens: int
     cout: float
     rappel: float
+    # Poids donné au dénivelé dans le choix des étapes : 1 pour le D+ maximal ; plus bas,
+    # voire négatif, quand on vise un D+ modéré.
+    poids_vertical: float = 1.0
 
 
 @dataclass
@@ -100,6 +103,7 @@ class Recherche:
         reglages: dict[str, Any],
         graine: int = 0,
         chemin_min: float = 0.0,
+        dplus_cible: float | None = None,
     ):
         self.g = graphe
         self.c = chemins
@@ -107,6 +111,7 @@ class Recherche:
         self.r = reglages
         self.distance = distance_m
         self.chemin_min = chemin_min
+        self.dplus_cible = dplus_cible
         # Si une part minimale de chemin est demandée, chaque mètre de chemin rapporte un peu.
         self.prime_chemin = reglages["prime_chemin_par_m"] if chemin_min > 0 else 0.0
         self.l_min = distance_m * (1 - tolerance)
@@ -129,9 +134,14 @@ class Recherche:
     # ------------------------------------------------------------------ notes
 
     def noter(self, mesure: Mesure) -> float:
-        """Note d'une boucle : son D+, diminué de pénalités pour chaque défaut."""
+        """Note d'une boucle : son D+ (ou sa proximité au D+ visé), moins les défauts."""
         r = self.r
-        note = mesure.dplus_m + self.prime_chemin * mesure.chemin_m
+        if self.dplus_cible is None:
+            note = mesure.dplus_m + self.prime_chemin * mesure.chemin_m
+        else:
+            # D+ cible : on veut l'écart le plus petit ; à écart égal, plus de sentier.
+            part_chemin = mesure.chemin_m / max(mesure.longueur_m, 1.0)
+            note = -abs(mesure.dplus_m - self.dplus_cible) + r["cible_bonus_chemin_m"] * part_chemin
         note -= r["penalite_double_par_m"] * mesure.double_m
         note -= r["penalite_double_exact_par_m"] * mesure.double_exact_m
         note -= r["penalite_demi_tour_m"] * mesure.demi_tours
@@ -229,6 +239,9 @@ class Recherche:
             sens=1 if h.random() < 0.5 else -1,
             cout=float(h.uniform(*r["cout_par_m"])),
             rappel=float(h.uniform(*r["rappel_guide"])),
+            poids_vertical=(
+                1.0 if self.dplus_cible is None else float(h.uniform(*r["poids_vertical_cible"]))
+            ),
         )
 
     def varier(self, guide: Guide) -> Guide:
@@ -242,6 +255,16 @@ class Recherche:
             cout=float(np.clip(guide.cout * h.uniform(1 - ampleur, 1 + ampleur), *r["cout_par_m"])),
             rappel=float(
                 np.clip(guide.rappel * h.uniform(1 - ampleur, 1 + ampleur), *r["rappel_guide"])
+            ),
+            poids_vertical=(
+                1.0
+                if self.dplus_cible is None
+                else float(
+                    np.clip(
+                        guide.poids_vertical + h.normal(0, ampleur),
+                        *r["poids_vertical_cible"],
+                    )
+                )
             ),
         )
 
@@ -294,7 +317,7 @@ class Recherche:
                 mou = reste - c.retour[ici] * r["marge_retour"]
                 envie_de_rentrer = r["rappel_depart"] * max(0.0, 1 - mou / self.rappel_des)
                 notes = (
-                    vertical
+                    guide.poids_vertical * vertical
                     - cout * longueurs
                     + self.prime_chemin * liaisons.chemin[rangs]
                     - rappel * np.maximum(0.0, ecart - self.bande)

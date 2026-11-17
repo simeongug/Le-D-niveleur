@@ -19,13 +19,31 @@ La référence à battre est un tracé fait à la main : 25,1 km pour 579 m de D
 | 1 | Cadrage : repo, vérifications automatiques, décisions d'architecture | ✅ |
 | 2 | Données : chemins OpenStreetMap + altitude IGN, secteur Saint-Cloud / Meudon | ✅ |
 | 3 | Moteur en ligne de commande : boucle à D+ maximal, export GPX | ✅ |
-| 4 | D+ cible et estimation du temps de parcours | à venir |
-| 5 | API + interface web utilisable sur téléphone | à venir |
+| 4 | D+ cible et estimation du temps de parcours | ✅ (sauf « temps cible ») |
+| 5 | Site web utilisable sur téléphone | ✅ (mise en ligne en cours) |
 | 6 | Intervalles en côte | à venir |
 | 7 | Préférences avancées (pente, escaliers, surface, portions en double) | à venir |
 | 8 | Options : connexion Strava, autres régions, hébergement public | à venir |
 
 Le détail est dans [docs/feuille-de-route.md](docs/feuille-de-route.md).
+
+## Le site
+
+Une page web, pensée pour le téléphone : on place le départ sur la carte (ou « Ma
+position »), on choisit la distance, **le plus de D+ possible ou un D+ visé**, et les
+contraintes (éviter les escaliers, part minimale de sentier). En une trentaine de
+secondes, le site propose jusqu'à trois boucles différentes, avec la carte colorée par
+la pente, le profil, les côtes, le temps estimé et le **fichier GPX à télécharger**.
+
+![Le site sur téléphone](docs/images/site-telephone.jpg)
+
+Pour le lancer sur son ordinateur, après l'installation ci-dessous :
+
+```bash
+deniveleur site          # puis ouvrir http://localhost:8000
+```
+
+Pour le mettre en ligne gratuitement : [docs/deploiement.md](docs/deploiement.md).
 
 ## Ce que ça donne aujourd'hui
 
@@ -82,6 +100,9 @@ Connect, Suunto ou Coros.
 | `--temps 40` | temps de recherche en secondes (25 par défaut) |
 | `--graine 2` | autre tirage : donne d'autres boucles |
 
+Pour viser un D+ précis plutôt que le maximum, utiliser le site (le moteur le fait avec
+moins de 1 % d'écart sur 20 km, de 200 à 500 m visés).
+
 Autres commandes : `deniveleur denivele ma-sortie.gpx` mesure le D+ d'un tracé, et
 `deniveleur donnees carte` dessine la carte des pentes (voir
 [docs/donnees.md](docs/donnees.md)).
@@ -103,7 +124,8 @@ pytest
 ## Organisation du repo
 
 ```
-src/deniveleur/     le code de l'application
+src/deniveleur/     le code de l'application (moteur/, site/)
+deploiement/        installation automatique sur un serveur
 src/deniveleur/config/parametres.toml   tous les réglages
 tests/              les tests automatiques
 benchmarks/         les cas de référence du moteur et leur dernier rapport
@@ -118,10 +140,12 @@ docs/               la feuille de route, les données, l'algorithme, la validati
 2. [Un réseau de chemins préparé à l'avance](docs/decisions/0002-reseau-prepare-a-l-avance.md)
 3. [Un moteur indépendant de l'interface et des régions](docs/decisions/0003-moteur-independant.md)
 4. [Altitude à 2 m et réseau enregistré en tableaux](docs/decisions/0004-altitude-et-format-du-reseau.md)
+5. [Héberger le site sur le serveur gratuit d'Oracle Cloud](docs/decisions/0005-hebergement-oracle.md)
 
 ## Données
 
 - Chemins : © les contributeurs d'[OpenStreetMap](https://www.openstreetmap.org/copyright), licence ODbL.
 - Altitude et fond de carte : IGN (RGE ALTI®, Plan IGN), Licence Ouverte Etalab 2.0.
+- Affichage de la carte : MapLibre GL JS (licence BSD), intégré au site.
 
 Le projet n'utilise pas la carte de chaleur de Strava.

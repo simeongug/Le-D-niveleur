@@ -10,6 +10,14 @@
 
 Rien n'est stocké dans le repo : tout se retélécharge dans le dossier `data/`.
 
+## La zone couverte
+
+La zone par défaut, `ouest-parisien`, couvre 26 km × 22 km : de Marnes-la-Coquette et
+Meudon à l'ouest et au sud jusqu'à Montmartre et la Villette au nord-est, Mont Valérien
+compris. Elle compte environ 600 000 tronçons ; construire le réseau prend 1 min 30 et
+2,2 Go de mémoire, et le site en occupe ensuite environ 650 Mo. L'ancienne zone
+`saint-cloud-meudon` (12 km × 12 km) reste disponible avec `--zone saint-cloud-meudon`.
+
 ## Les commandes
 
 ```bash

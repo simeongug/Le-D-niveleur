@@ -62,10 +62,11 @@ select, input[type=text] {
 }
 
 .choix { display: flex; gap: 6px; margin-bottom: 6px; }
-.choix label { flex: 1; }
+.choix label { flex: 1; display: flex; }
 .choix input { position: absolute; opacity: 0; pointer-events: none; }
 .choix span {
-  display: block; text-align: center; padding: 9px 6px; border-radius: 9px;
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 9px 6px; border-radius: 9px;
   border: 1px solid var(--bord); font-size: 0.9rem; cursor: pointer;
 }
 .choix input:checked + span { background: var(--vert-fonce); color: #fff; border-color: var(--vert-fonce); }
@@ -73,6 +74,10 @@ select, input[type=text] {
 
 .interrupteur { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 0.92rem; cursor: pointer; }
 .interrupteur input { width: 20px; height: 20px; accent-color: var(--vert); }
+.nom-cote { margin: 0 0 8px; font-size: 1.05rem; }
+.choix-mode { margin-bottom: 10px; }
+.choix-mode span { font-weight: 600; }
+.sous-titre { font-size: 0.8rem; color: var(--texte-doux); margin: 8px 0 4px; }
 .note { font-size: 0.78rem; color: var(--texte-doux); margin: 4px 0 6px; }
 
 .avance { padding: 10px 0 2px; font-size: 0.9rem; }

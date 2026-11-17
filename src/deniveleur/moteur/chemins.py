@@ -20,6 +20,7 @@ class Liaisons:
     montee: NDArray[np.float64]
     descente: NDArray[np.float64]
     chemin: NDArray[np.float64]  # longueur sur sentier ou piste
+    route: NDArray[np.float64]  # longueur sur voie revêtue (hors escaliers)
     arcs: list[list[int] | None]
 
 
@@ -99,6 +100,7 @@ class Chemins:
         nombre = len(voisines)
         longueur = np.full(nombre, np.inf)
         montee, descente, chemin = np.zeros(nombre), np.zeros(nombre), np.zeros(nombre)
+        route = np.zeros(nombre)
         liste: list[list[int] | None] = []
         for rang, voisine in enumerate(voisines):
             arcs = self._remonter(precedents, racine, int(self.ancres[voisine]))
@@ -108,11 +110,12 @@ class Chemins:
                 montee[rang] = g.arc_gain[tableau].sum()
                 descente[rang] = g.arc_gain[tableau ^ 1].sum()
                 chemin[rang] = g.arc_longueur[tableau][g.arc_chemin[tableau]].sum()
+                route[rang] = g.arc_longueur[tableau][g.arc_route[tableau]].sum()
             else:
                 arcs = None
             liste.append(arcs)
             self._chemins[(ancre, int(voisine))] = arcs
-        resultat = Liaisons(voisines, longueur, montee, descente, chemin, liste)
+        resultat = Liaisons(voisines, longueur, montee, descente, chemin, route, liste)
         self._liaisons[ancre] = resultat
         return resultat
 

@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from deniveleur import gpx, moteur
-from deniveleur.moteur import temps
+from deniveleur.moteur import cotes, temps
 from deniveleur.moteur.itineraire import Boucle
 from deniveleur.reseau import Reseau
 
@@ -33,6 +33,12 @@ class Demande:
     sans_escaliers: bool
     propositions: int
     allure_s_par_km: float
+    voies: str = "indifferent"
+    allers_retours: bool = False
+    # « boucle » : propositions de boucles ; « cotes » : côtes pour intervalles.
+    type: str = "boucle"
+    duree_intervalle_s: float = 240
+    rayon_cotes_m: float = 3000
 
 
 @dataclass
@@ -115,6 +121,9 @@ class FileDeCalculs:
             calcul.fin = time.time()
 
     def _executer(self, calcul: Calcul) -> None:
+        if calcul.demande.type == "cotes":
+            self._executer_cotes(calcul)
+            return
         d = calcul.demande
         boucles, rapport = moteur.generer(
             self.reseau,
@@ -128,6 +137,8 @@ class FileDeCalculs:
             chemin_min=d.chemin_min_pct / 100,
             escaliers=False if d.sans_escaliers else None,
             dplus_cible=d.dplus_cible,
+            voies=d.voies,
+            allers_retours=d.allers_retours,
         )
         calcul.boucles = boucles
         calcul.resultat = {
@@ -141,9 +152,47 @@ class FileDeCalculs:
             ],
         }
 
+    def _executer_cotes(self, calcul: Calcul) -> None:
+        d = calcul.demande
+        debut = time.perf_counter()
+        trouvees = cotes.chercher(
+            self.reseau,
+            self.parametres,
+            d.latitude,
+            d.longitude,
+            d.duree_intervalle_s,
+            allure_s_par_km=d.allure_s_par_km,
+            rayon_m=d.rayon_cotes_m,
+            escaliers=not d.sans_escaliers,
+        )
+        calcul.boucles = [cote.trace for cote in trouvees]
+        propositions = []
+        for rang, cote in enumerate(trouvees, 1):
+            fiche = decrire(cote.trace, rang, self.parametres, d.allure_s_par_km)
+            fiche.update(
+                type="cote",
+                nom=cote.nom,
+                denivele_m=round(cote.denivele_m),
+                pente_moyenne_pct=round(cote.pente_moyenne_pct, 1),
+                pente_max_pct=round(cote.pente_max_pct, 1),
+                temps_s=round(cote.duree_s),
+                temps_texte=temps.formater_precis(cote.duree_s),
+                approche_m=round(cote.approche_m),
+            )
+            propositions.append(fiche)
+        calcul.resultat = {
+            "type": "cotes",
+            "duree_s": round(time.perf_counter() - debut, 1),
+            "propositions": propositions,
+        }
+
     def gpx(self, calcul: Calcul, rang: int) -> tuple[str, str]:
         """(nom de fichier, contenu GPX) de la proposition n° `rang`."""
         boucle = calcul.boucles[rang - 1]
+        if calcul.demande.type == "cotes":
+            nom = f"deniveleur-cote-{boucle.distance_m:.0f}m-{boucle.dplus_m:.0f}m"
+            titre = f"Côte — {boucle.distance_m:.0f} m, D+ {boucle.dplus_m:.0f} m"
+            return f"{nom}.gpx", gpx.en_gpx(boucle, titre)
         nom = f"deniveleur-{boucle.distance_m / 1000:.1f}km-{boucle.dplus_m:.0f}m"
         titre = f"Le Déniveleur — {boucle.distance_m / 1000:.1f} km, D+ {boucle.dplus_m:.0f} m"
         return f"{nom}.gpx", gpx.en_gpx(boucle, titre)
@@ -167,6 +216,7 @@ def decrire(
     )
     return {
         "rang": rang,
+        "type": "boucle",
         "distance_m": round(boucle.distance_m),
         "dplus_m": round(boucle.dplus_m),
         "dmoins_m": round(boucle.dmoins_m),

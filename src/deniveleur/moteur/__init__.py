@@ -16,10 +16,10 @@ from deniveleur.moteur import graphe as module_graphe
 from deniveleur.moteur.boucle import Evaluateur
 from deniveleur.moteur.chemins import Chemins
 from deniveleur.moteur.itineraire import Boucle, Montee, assembler
-from deniveleur.moteur.recherche import Candidat, Recherche
+from deniveleur.moteur.recherche import VOIES, Candidat, Recherche
 from deniveleur.reseau import Reseau
 
-__all__ = ["Boucle", "Montee", "Rapport", "generer"]
+__all__ = ["VOIES", "Boucle", "Montee", "Rapport", "generer"]
 
 journal = logging.getLogger(__name__)
 
@@ -74,12 +74,16 @@ def generer(
     chemin_min: float = 0.0,
     escaliers: bool | None = None,
     dplus_cible: float | None = None,
+    voies: str = "indifferent",
+    allers_retours: bool = False,
 ) -> tuple[list[Boucle], Rapport]:
     """Cherche les meilleures boucles de `distance_m` partant de (latitude, longitude).
 
     `dplus_cible` : D+ visé en mètres (None = le plus de D+ possible).
     `chemin_min` : part minimale de sentier ou piste (0 à 1). `escaliers` : False
-    pour les éviter (None = réglage par défaut).
+    pour les éviter (None = réglage par défaut). `voies` : « chemin » ou « route » pour
+    privilégier l'un ou l'autre, « indifferent » sinon. `allers_retours` : True pour
+    accepter de repasser par un tronçon (une fois dans chaque sens) et les culs-de-sac.
 
     Renvoie les boucles valides, de la plus riche en D+ à la moins riche (liste
     vide si aucune n'a été trouvée), et un rapport de recherche.
@@ -87,6 +91,7 @@ def generer(
     reglages = dict(parametres["moteur"])
     if escaliers is not None:
         reglages["escaliers"] = escaliers
+    reglages["allers_retours_acceptes"] = allers_retours
     tolerance = reglages["tolerance"] if tolerance is None else tolerance
     budget_s = reglages["budget_s"] if budget_s is None else budget_s
     debut = time.perf_counter()
@@ -96,20 +101,42 @@ def generer(
         graphe, reglages, parametres["profil"]["hysteresis_m"], parametres["profil"]["pas_m"]
     )
     chemins = Chemins(graphe, reglages)
-    recherche = Recherche(
-        graphe,
-        chemins,
-        evaluateur,
-        distance_m,
-        tolerance,
-        reglages,
-        graine,
-        chemin_min,
-        dplus_cible,
-    )
+
+    def recherche(avec_allers_retours: bool) -> Recherche:
+        return Recherche(
+            graphe,
+            chemins,
+            evaluateur,
+            distance_m,
+            tolerance,
+            reglages,
+            graine,
+            chemin_min,
+            dplus_cible,
+            voies,
+            avec_allers_retours,
+        )
+
     preparation = time.perf_counter() - debut
-    candidats, bilan = recherche.chercher(budget_s)
-    if dplus_cible is None:
+    if allers_retours:
+        # Allers-retours acceptés : on cherche aussi des boucles strictes, pour ne proposer
+        # un aller-retour que s'il rapporte vraiment plus qu'une boucle sans.
+        strictes = recherche(False)
+        part = reglages["allers_retours"]["part_temps_strict"]
+        candidats_stricts, bilan_strict = strictes.chercher(budget_s * part)
+        avec = recherche(True)
+        candidats, bilan = avec.chercher(budget_s * (1 - part))
+        for candidat in candidats_stricts:
+            # Même barème que les autres (une boucle stricte n'a aucune pénalité d'aller-retour).
+            candidat.note = avec.noter(candidat.mesure)
+            candidat.valide = avec.valide(candidat.mesure)
+        candidats = sorted(candidats + candidats_stricts, key=lambda c: (-c.valide, -c.note))
+        bilan.constructions += bilan_strict.constructions
+        bilan.abouties += bilan_strict.abouties
+        bilan.valides += bilan_strict.valides
+    else:
+        candidats, bilan = recherche(False).chercher(budget_s)
+    if dplus_cible is None and not allers_retours:
         valides = sorted((c for c in candidats if c.valide), key=lambda c: -c.mesure.dplus_m)
     else:
         valides = sorted((c for c in candidats if c.valide), key=lambda c: -c.note)

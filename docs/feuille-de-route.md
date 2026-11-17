@@ -44,15 +44,23 @@ automatique sur un serveur gratuit Oracle Cloud, mise à jour automatique depuis
 [deploiement.md](deploiement.md).
 **Reste à vérifier par Siméon :** l'usage depuis son téléphone une fois en ligne.
 
-## 6. Intervalles en côte
+## 6. Intervalles en côte ✅ (première version)
 
-Insérer dans la boucle des répétitions sur une côte choisie.
+Trouver, près du départ, des côtes qui tiennent une durée de répétition donnée.
+**Résultat :** sur le site, le mode « Des côtes pour intervalles » ; depuis la rue
+Dailly, 5 côtes de 4 minutes en 7 secondes (voir [algorithme.md](algorithme.md)).
+**Reste à faire :** insérer les répétitions dans une boucle (échauffement → côte × N →
+retour) ; caler l'allure en côte sur les sorties Strava de Siméon.
 
-## 7. Préférences avancées
+## 7. Contraintes ✅ (en partie)
 
-Un interrupteur oui/non pour chacune : pente maximale, escaliers, type de surface,
-portions en double.
+Max de route / max de chemin / indifférent ; escaliers à éviter ou indifférents ;
+boucle stricte ou allers-retours acceptés.
+**Reste à faire :** pente maximale, horaires des parcs.
 
 ## 8. Options
 
-Connexion Strava, autres régions, hébergement public (budget : 0 €).
+- **Zone** : ouest parisien de Meudon à Montmartre, Mont Valérien compris ✅. Toute
+  l'Île-de-France : à décider (volume de données, voir la discussion du 17 novembre).
+- Connexion Strava, segments (KOM) : à décider (l'API de Strava est très restreinte).
+- Hébergement public (budget : 0 €).

@@ -28,11 +28,12 @@ if [[ "$avant" != "$apres" ]]; then
 fi
 
 if [[ "${1:-}" == "--donnees" ]]; then
-  "${DENIVELEUR[@]}" donnees telecharger --donnees "$DONNEES"
   refaire_reseau=1
 fi
 
 if [[ $refaire_reseau -eq 1 ]]; then
+  # Ne télécharge que ce qui manque ou a changé (nouvelle zone, nouvel extrait OSM…).
+  "${DENIVELEUR[@]}" donnees telecharger --donnees "$DONNEES"
   "${DENIVELEUR[@]}" donnees reseau --donnees "$DONNEES"
 fi
 

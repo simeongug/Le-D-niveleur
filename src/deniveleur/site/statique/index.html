@@ -25,6 +25,10 @@
 
     <section class="panneau">
       <form id="formulaire" class="formulaire" novalidate>
+        <div class="choix choix-mode" role="radiogroup" aria-label="Ce que je cherche">
+          <label><input type="radio" name="mode" value="boucle" checked><span>Une boucle</span></label>
+          <label><input type="radio" name="mode" value="cotes"><span>Des côtes pour intervalles</span></label>
+        </div>
         <fieldset>
           <legend>Départ</legend>
           <div class="ligne-depart">
@@ -33,7 +37,24 @@
           </div>
         </fieldset>
 
-        <fieldset>
+        <fieldset class="mode-cotes" hidden>
+          <legend>Intervalle</legend>
+          <div class="curseur-valeur">
+            <input type="range" id="duree" min="1" max="10" step="0.5" value="4" aria-label="Durée d'une répétition en minutes">
+            <output id="duree-valeur" for="duree">4 min</output>
+          </div>
+          <label class="petit">Allure à plat pendant l'effort
+            <input type="text" id="allure-intervalle" inputmode="numeric" value="4:30" pattern="\d{1,2}:\d{2}" size="5"> /km
+          </label>
+          <p class="sous-titre">Bas de la côte à moins de</p>
+          <div class="curseur-valeur">
+            <input type="range" id="rayon" min="0.5" max="6" step="0.5" value="3" aria-label="Distance maximale du départ en kilomètres">
+            <output id="rayon-valeur" for="rayon">3 km</output>
+          </div>
+          <p class="note">Le temps en côte est estimé avec la règle « 100 m de D+ ≈ 1 km de plat ».</p>
+        </fieldset>
+
+        <fieldset class="mode-boucle">
           <legend>Distance</legend>
           <div class="curseur-valeur">
             <input type="range" id="distance" min="5" max="35" step="1" value="21" aria-label="Distance en kilomètres">
@@ -48,7 +69,7 @@
           </label>
         </fieldset>
 
-        <fieldset>
+        <fieldset class="mode-boucle">
           <legend>Dénivelé</legend>
           <div class="choix" role="radiogroup">
             <label><input type="radio" name="objectif" value="max" checked><span>Le plus possible</span></label>
@@ -62,22 +83,30 @@
 
         <fieldset>
           <legend>Contraintes</legend>
-          <label class="interrupteur">
-            <input type="checkbox" id="sans-escaliers">
-            <span>Éviter les escaliers</span>
-          </label>
-          <label class="interrupteur">
-            <input type="checkbox" id="sentier-actif">
-            <span>Imposer une part de sentier</span>
-          </label>
-          <div class="curseur-valeur" id="bloc-sentier" hidden>
-            <input type="range" id="sentier" min="10" max="80" step="10" value="50" aria-label="Part minimale de sentier">
-            <output id="sentier-valeur" for="sentier">50 %</output>
+          <div class="mode-boucle">
+          <p class="sous-titre">Type de voie</p>
+          <div class="choix" role="radiogroup" aria-label="Type de voie">
+            <label><input type="radio" name="voies" value="route"><span>Max de route</span></label>
+            <label><input type="radio" name="voies" value="chemin"><span>Max de chemin</span></label>
+            <label><input type="radio" name="voies" value="indifferent" checked><span>Indifférent</span></label>
           </div>
-          <p class="note">Jamais deux fois le même chemin, jamais de demi-tour.</p>
+          </div>
+          <p class="sous-titre">Escaliers</p>
+          <div class="choix" role="radiogroup" aria-label="Escaliers">
+            <label><input type="radio" name="escaliers" value="eviter"><span>Éviter</span></label>
+            <label><input type="radio" name="escaliers" value="indifferent" checked><span>Indifférent</span></label>
+          </div>
+          <div class="mode-boucle">
+          <p class="sous-titre">Boucle</p>
+          <div class="choix" role="radiogroup" aria-label="Boucle">
+            <label><input type="radio" name="boucle" value="stricte" checked><span>Stricte</span></label>
+            <label><input type="radio" name="boucle" value="allers-retours"><span>Allers-retours acceptés</span></label>
+          </div>
+          <p class="note" id="note-boucle">Jamais deux fois le même chemin, jamais de demi-tour.</p>
+          </div>
         </fieldset>
 
-        <details class="avance">
+        <details class="avance mode-boucle">
           <summary>Réglages avancés</summary>
           <label class="petit">Allure à plat (pour le temps estimé)
             <input type="text" id="allure" inputmode="numeric" value="6:00" pattern="\d{1,2}:\d{2}" size="5"> /km

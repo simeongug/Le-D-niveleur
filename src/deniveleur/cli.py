@@ -47,6 +47,17 @@ def construire_analyseur() -> argparse.ArgumentParser:
         "--chemin-min", type=float, default=0, help="part minimale de sentier ou piste, en %%"
     )
     boucle.add_argument("--sans-escaliers", action="store_true", help="évite les escaliers")
+    boucle.add_argument(
+        "--voies",
+        choices=["indifferent", "chemin", "route"],
+        default="indifferent",
+        help="privilégier les sentiers (chemin) ou le bitume (route)",
+    )
+    boucle.add_argument(
+        "--allers-retours",
+        action="store_true",
+        help="accepte de reprendre un chemin (une fois dans chaque sens) et les culs-de-sac",
+    )
     boucle.add_argument("--graine", type=int, default=0, help="change le tirage au hasard")
     boucle.add_argument("--sortie", type=Path, default=Path("sorties"), help="dossier de sortie")
     boucle.add_argument("--sans-carte", action="store_true", help="n'écrit que le GPX")
@@ -187,6 +198,8 @@ def generer_boucles(options: argparse.Namespace) -> int:
         propositions=options.propositions,
         chemin_min=options.chemin_min / 100,
         escaliers=False if options.sans_escaliers else None,
+        voies=options.voies,
+        allers_retours=options.allers_retours,
     )
     if not boucles:
         print("Aucune boucle valide trouvée. Essayer une autre distance ou plus de temps.")

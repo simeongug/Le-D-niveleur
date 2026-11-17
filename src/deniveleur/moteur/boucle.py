@@ -21,6 +21,7 @@ class Mesure:
     double_exact_m: float  # tronçons empruntés deux fois
     demi_tours: int
     chemin_m: float = 0.0  # longueur sur sentier ou piste
+    route_m: float = 0.0  # longueur sur voie revêtue (hors escaliers)
 
 
 def sans_allers_retours(arcs: list[int]) -> list[int]:
@@ -118,4 +119,5 @@ class Evaluateur:
             double_exact_m=double_exact,
             demi_tours=int((cosinus < self.cos_demi_tour).sum()),
             chemin_m=float(longueurs[g.arc_chemin[tableau]].sum()),
+            route_m=float(longueurs[g.arc_route[tableau]].sum()),
         )

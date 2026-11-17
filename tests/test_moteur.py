@@ -157,3 +157,54 @@ def test_reperer_montees():
     bas, haut = montees[0]
     assert distances[bas] == pytest.approx(100)
     assert distances[haut] == pytest.approx(500)
+
+
+@cache
+def boucle_preferee(voies: str) -> moteur.Boucle:
+    latitude, longitude = depart_gps()
+    boucles, _ = moteur.generer(
+        reseau_essai(), PARAMETRES, latitude, longitude, 5000, budget_s=3, voies=voies
+    )
+    assert boucles
+    return boucles[0]
+
+
+def test_preference_de_voie():
+    # Sur le terrain d'essai, les rues est-ouest sont des sentiers, les nord-sud du bitume.
+    chemin, route = boucle_preferee("chemin"), boucle_preferee("route")
+    # Une boucle sur ce quadrillage emprunte forcément les deux sens : on vérifie l'écart.
+    assert chemin.part_chemin > route.part_chemin + 0.1
+
+
+def test_preference_de_voie_inconnue():
+    latitude, longitude = depart_gps()
+    with pytest.raises(ValueError, match="voie inconnue"):
+        moteur.generer(reseau_essai(), PARAMETRES, latitude, longitude, 5000, voies="herbe")
+
+
+def test_allers_retours_acceptes():
+    latitude, longitude = depart_gps()
+    boucles, rapport = moteur.generer(
+        reseau_essai(), PARAMETRES, latitude, longitude, 5000, budget_s=3, allers_retours=True
+    )
+    assert boucles and rapport.valides >= 1
+    boucle = boucles[0]
+    assert (boucle.x[0], boucle.y[0]) == pytest.approx((boucle.x[-1], boucle.y[-1]))
+    assert 4750 <= boucle.distance_m <= 5250
+    assert boucle.dplus_m > 100
+
+
+def test_cotes_pour_intervalles():
+    from deniveleur.moteur import cotes
+
+    latitude, longitude = depart_gps()
+    # 1 min 30 à 4:30 /km : de l'ordre de 300 m de côte sur le terrain d'essai.
+    trouvees = cotes.chercher(
+        reseau_essai(), PARAMETRES, latitude, longitude, 90, allure_s_par_km=270
+    )
+    assert trouvees
+    for cote in trouvees:
+        assert 90 * 0.85 <= cote.duree_s <= 90 * 1.15 + 5
+        assert cote.pente_moyenne_pct >= PARAMETRES["cotes"]["pente_min_pct"] - 0.5
+        assert cote.trace.altitudes[-1] > cote.trace.altitudes[0]
+        assert cote.approche_m <= PARAMETRES["cotes"]["rayon_m"]

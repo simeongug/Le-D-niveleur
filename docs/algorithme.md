@@ -103,6 +103,44 @@ retenue, pour avoir de vrais choix différents.
 - **Alertes** : passages en double, escaliers, horaires des parcs (pas encore
   vérifiés, voir étape 7).
 
+## 7. Contraintes (`recherche.py`)
+
+- **Type de voie** : « max de chemin » donne un petit bonus (0,03 m de D+ par mètre) à
+  chaque mètre de sentier ou de piste, « max de route » le même bonus à chaque mètre
+  de voie revêtue (escaliers exclus). Ce n'est pas une obligation : sur 21 km depuis la
+  rue Dailly, la part de sentier passe d'environ 48 % à 61 % (max de chemin) ou 18 %
+  (max de route), pour un D+ presque inchangé.
+- **Escaliers** : « éviter » les retire du réseau avant la recherche.
+- **Allers-retours acceptés** : les culs-de-sac sont gardés, et un tronçon peut être
+  repris une fois dans chaque sens (au plus 20 % de la distance). Chaque mètre repris
+  coûte 0,1 m de D+ dans la note, chaque demi-tour 15 m. La moitié du temps sert à
+  chercher aussi des boucles strictes : on ne propose un aller-retour que s'il rapporte
+  vraiment plus. En pratique, dans le secteur de Saint-Cloud, le gain est faible : les
+  boucles strictes sont déjà très riches en D+.
+
+## 8. Côtes pour intervalles (`cotes.py`)
+
+But : trouver près du départ des montées qui durent environ le temps d'une répétition
+(par exemple 4 minutes).
+
+1. **Temps d'une montée** : même règle que pour les boucles (100 m de D+ ≈ 1 km de
+   plat), avec une allure d'intervalle (4:30 /km par défaut). Une côte de 380 m à
+   13 % (+50 m) compte comme 0,88 km de plat, soit environ 3 min 55 à 4:30 /km.
+2. **Bas de côte possibles** : le carrefour le plus bas de chaque case de 150 m, et
+   chaque carrefour plus bas que tous ses voisins, à moins de 3 km du départ par les
+   chemins.
+3. **Exploration** : depuis chaque bas, on avance en suivant d'abord ce qui monte le
+   plus (3 continuations au plus à chaque carrefour), sans virage de plus de 120° et
+   sans redescendre de plus de 4 m sous le point le plus haut atteint. On garde les
+   montées dont le temps est à ±15 % de la durée demandée et la pente moyenne d'au
+   moins 4 %.
+4. **Tri** : note = dénivelé − 3 × descente intermédiaire − 0,5 m par mètre d'escalier
+   − 5 m par km d'approche − 0,5 m par % d'écart à la durée. On propose les 5
+   meilleures qui ne se recouvrent pas (moins de 30 % de longueur en commun).
+
+Depuis la rue Dailly, pour 4 minutes : 5 côtes en 7 secondes, dont trois sentiers du
+parc de Saint-Cloud (380 à 450 m, 11 à 13 % de moyenne).
+
 ## Limites connues
 
 - Le moteur ne garantit pas la meilleure boucle possible : il en trouve une très bonne

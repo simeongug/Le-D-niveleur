@@ -25,6 +25,9 @@ journal = logging.getLogger(__name__)
 
 _BASE = 1 << 20  # même codage des cases que dans boucle.py
 
+# Préférences de voie possibles.
+VOIES = ("indifferent", "chemin", "route")
+
 
 @dataclass(frozen=True)
 class Guide:
@@ -72,6 +75,7 @@ class Occupation:
     def __init__(self, recherche: "Recherche"):
         self.recherche = recherche
         self.pris: set[int] = set()
+        self.sens_pris: set[int] = set()  # arcs pris (un tronçon dans un sens donné)
         self.cases: set[int] = set()
         self.inclus = 0  # nombre d'arcs du parcours déjà versés dans `cases`
         self.taille = 0
@@ -85,8 +89,10 @@ class Occupation:
         if coupe < self.inclus or len(parcours) < self.taille:
             self.cases, self.inclus = set(), 0
             self.pris = {arc >> 1 for arc in parcours}
+            self.sens_pris = set(parcours)
         else:
             self.pris.update(arc >> 1 for arc in parcours[self.taille :])
+            self.sens_pris.update(parcours[self.taille :])
         for arc in parcours[self.inclus : coupe]:
             self.cases |= recherche.alentours(arc)
         self.inclus, self.taille = coupe, len(parcours)
@@ -104,6 +110,8 @@ class Recherche:
         graine: int = 0,
         chemin_min: float = 0.0,
         dplus_cible: float | None = None,
+        voies: str = "indifferent",
+        allers_retours: bool = False,
     ):
         self.g = graphe
         self.c = chemins
@@ -112,8 +120,18 @@ class Recherche:
         self.distance = distance_m
         self.chemin_min = chemin_min
         self.dplus_cible = dplus_cible
-        # Si une part minimale de chemin est demandée, chaque mètre de chemin rapporte un peu.
-        self.prime_chemin = reglages["prime_chemin_par_m"] if chemin_min > 0 else 0.0
+        self.allers_retours = allers_retours
+        # Préférence de voie : chaque mètre de sentier (ou de route) rapporte un peu. Une
+        # part minimale de sentier demandée oriente aussi vers les sentiers.
+        if voies not in VOIES:
+            raise ValueError(f"Préférence de voie inconnue : {voies} ({', '.join(VOIES)}).")
+        prime = reglages["prime_voie_par_m"]
+        self.prime_chemin = prime if voies == "chemin" or chemin_min > 0 else 0.0
+        self.prime_route = prime if voies == "route" else 0.0
+        # Avec les allers-retours acceptés, les pénalités de « double » sont allégées.
+        if allers_retours:
+            reglages = {**reglages, **reglages.get("allers_retours", {})}
+            self.r = reglages
         self.l_min = distance_m * (1 - tolerance)
         self.l_max = distance_m * (1 + tolerance)
         # On vise le haut de la fourchette : plus de distance, c'est plus de D+.
@@ -137,11 +155,13 @@ class Recherche:
         """Note d'une boucle : son D+ (ou sa proximité au D+ visé), moins les défauts."""
         r = self.r
         if self.dplus_cible is None:
-            note = mesure.dplus_m + self.prime_chemin * mesure.chemin_m
+            note = mesure.dplus_m + self.prime_voie(mesure.chemin_m, mesure.route_m)
         else:
-            # D+ cible : on veut l'écart le plus petit ; à écart égal, plus de sentier.
-            part_chemin = mesure.chemin_m / max(mesure.longueur_m, 1.0)
-            note = -abs(mesure.dplus_m - self.dplus_cible) + r["cible_bonus_chemin_m"] * part_chemin
+            # D+ cible : on veut l'écart le plus petit ; à écart égal, la voie préférée.
+            part_voie = self.prime_voie(mesure.chemin_m, mesure.route_m) / max(
+                mesure.longueur_m * r["prime_voie_par_m"], 1.0
+            )
+            note = -abs(mesure.dplus_m - self.dplus_cible) + r["cible_bonus_voie_m"] * part_voie
         note -= r["penalite_double_par_m"] * mesure.double_m
         note -= r["penalite_double_exact_par_m"] * mesure.double_exact_m
         note -= r["penalite_demi_tour_m"] * mesure.demi_tours
@@ -151,11 +171,18 @@ class Recherche:
             note -= r["penalite_trop_court_par_m"] * (self.l_min - mesure.longueur_m)
         return note
 
+    def prime_voie(self, chemin_m: Any, route_m: Any) -> Any:
+        """Bonus (en mètres de D+) pour la voie préférée : sentier ou route (sans escaliers)."""
+        return self.prime_chemin * chemin_m + self.prime_route * route_m
+
     def valide_hors_chemin(self, mesure: Mesure) -> bool:
-        """Bonne longueur, aucun tronçon pris deux fois, aucun demi-tour."""
+        """Bonne longueur ; en boucle stricte, aucun tronçon pris deux fois ni demi-tour."""
+        if not self.l_min <= mesure.longueur_m <= self.l_max:
+            return False
+        if self.allers_retours:
+            return mesure.double_exact_m <= self.r["aller_retour_max_part"] * self.distance
         return (
-            self.l_min <= mesure.longueur_m <= self.l_max
-            and mesure.double_exact_m == 0
+            mesure.double_exact_m == 0
             and mesure.demi_tours == 0
             and mesure.double_m <= self.r["double_tolere_part"] * self.distance
         )
@@ -202,8 +229,14 @@ class Recherche:
 
         Renvoie (nombre d'arcs du parcours à retirer, arcs à ajouter), ou None.
         Si la liaison commence par rebrousser chemin, on raccourcit le parcours
-        d'autant au lieu de faire un aller-retour.
+        d'autant au lieu de faire un aller-retour — sauf si les allers-retours sont
+        acceptés : on peut alors reprendre un tronçon, une fois dans chaque sens.
         """
+        if self.allers_retours:
+            sens_pris = occupation.sens_pris
+            if any(arc in sens_pris for arc in liaison):
+                return None
+            return 0, liaison
         recul = 0
         while (
             recul < len(liaison)
@@ -319,7 +352,7 @@ class Recherche:
                 notes = (
                     guide.poids_vertical * vertical
                     - cout * longueurs
-                    + self.prime_chemin * liaisons.chemin[rangs]
+                    + self.prime_voie(liaisons.chemin[rangs], liaisons.route[rangs])
                     - rappel * np.maximum(0.0, ecart - self.bande)
                     + envie_de_rentrer * (c.retour[ici] - c.retour[voisines[rangs]])
                     + h.normal(0, r["bruit_m"], len(rangs))
@@ -358,7 +391,9 @@ class Recherche:
             retour = self._retour(parcours, int(c.ancres[ici]), self.l_max - longueur)
             if retour is None:
                 continue
-            boucle = sans_allers_retours(parcours + retour)
+            boucle = parcours + retour
+            if not self.allers_retours:
+                boucle = sans_allers_retours(boucle)
             if longueur + sum(self.longueurs[a] for a in retour) < self.l_min:
                 break  # reculer davantage ne ferait que raccourcir
             return boucle
@@ -444,6 +479,8 @@ class Recherche:
             arcs.append(g.arc_entre[(avant, courant)])
             courant = avant
         arcs.reverse()
+        if self.allers_retours:
+            return None if set(arcs) & occupation.sens_pris else arcs
         if not self.c.sans_demi_tour(arcs):
             return None
         cosinus = float((g.cap_fin[parcours[-1]] * g.cap_debut[arcs[0]]).sum())

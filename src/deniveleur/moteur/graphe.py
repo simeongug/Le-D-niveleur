@@ -33,6 +33,8 @@ class Graphe:
     arc_gain: Tableau  # D+ brut de l'arc, sans seuil
     arc_troncon: Entiers  # position du tronçon dans le réseau d'origine
     arc_chemin: NDArray[np.bool_]  # vrai = sentier ou piste
+    arc_route: NDArray[np.bool_]  # vrai = voie revêtue, hors escaliers
+    arc_escalier: NDArray[np.bool_]
     cap_debut: Tableau  # direction (vecteur unitaire) au départ de l'arc, forme (arcs, 2)
     cap_fin: Tableau  # direction à l'arrivée
     # Altitudes le long de chaque arc, premier point exclu (c'est le carrefour de départ).
@@ -97,7 +99,10 @@ def construire(
     garde &= reseau.escalier | (reseau.pente_max <= reglages["pente_max_plausible_pct"])
     if not reglages["escaliers"]:
         garde &= ~reseau.escalier
-    garde = sans_culs_de_sac(dep, arr, garde, nombre)
+    # Sans allers-retours, un cul-de-sac obligerait à un demi-tour : on les retire.
+    culs_de_sac = reglages.get("allers_retours_acceptes", False)
+    if not culs_de_sac:
+        garde = sans_culs_de_sac(dep, arr, garde, nombre)
 
     # Point de départ : le carrefour utilisable le plus proche.
     utilisable = np.zeros(nombre, bool)
@@ -116,7 +121,8 @@ def construire(
     rayon = distance_m * reglages["rayon_max_part"]
     eloignement = dijkstra(matrice, directed=False, indices=origine, limit=rayon)
     garde &= np.isfinite(eloignement[dep]) & np.isfinite(eloignement[arr])
-    garde = sans_culs_de_sac(dep, arr, garde, nombre)
+    if not culs_de_sac:
+        garde = sans_culs_de_sac(dep, arr, garde, nombre)
     matrice = _matrice(dep[garde], arr[garde], reseau.longueur[garde], nombre)
     _, composante = connected_components(matrice, directed=False)
     garde &= composante[dep] == composante[origine]
@@ -171,6 +177,8 @@ def construire(
         arc_gain=arc_gain,
         arc_troncon=np.repeat(troncons, 2),
         arc_chemin=np.repeat(reseau.chemin[troncons], 2),
+        arc_route=np.repeat(~reseau.chemin[troncons] & ~reseau.escalier[troncons], 2),
+        arc_escalier=np.repeat(reseau.escalier[troncons], 2),
         cap_debut=cap_debut,
         cap_fin=cap_fin,
         profils=profils,

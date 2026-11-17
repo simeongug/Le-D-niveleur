@@ -24,4 +24,4 @@ def zone(identifiant: str) -> dict[str, Any]:
     return zones[identifiant]
 
 
-ZONE_PAR_DEFAUT = "saint-cloud-meudon"
+ZONE_PAR_DEFAUT = "ouest-parisien"

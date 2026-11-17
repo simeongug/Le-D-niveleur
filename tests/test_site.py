@@ -75,3 +75,25 @@ def test_demandes_refusees(client):
     loin = {"latitude": 0.0, "longitude": 0.0, "distance_km": 5}
     assert client.post("/api/calculs", json=loin).status_code == 422
     assert client.get("/api/calculs/inconnu").status_code == 404
+
+
+def test_contraintes(client):
+    corps = demande(voies="chemin", sans_escaliers=True, allers_retours=True, propositions=1)
+    reponse = client.post("/api/calculs", json=corps)
+    assert reponse.status_code == 202
+    fini = attendre(client, reponse.json()["id"])
+    assert fini["etat"] == "termine", fini["erreur"]
+    assert fini["resultat"]["propositions"]
+    assert client.post("/api/calculs", json=demande(voies="herbe")).status_code == 422
+
+
+def test_cotes_pour_intervalles(client):
+    corps = demande(type="cotes", duree_intervalle_s=90, allure_s_par_km=270)
+    reponse = client.post("/api/calculs", json=corps)
+    fini = attendre(client, reponse.json()["id"])
+    assert fini["etat"] == "termine", fini["erreur"]
+    cotes = fini["resultat"]["propositions"]
+    assert cotes and cotes[0]["type"] == "cote"
+    assert 70 <= cotes[0]["temps_s"] <= 110
+    gpx = client.get(f"/api/calculs/{fini['id']}/gpx/1")
+    assert gpx.status_code == 200 and "cote" in gpx.headers["content-disposition"]

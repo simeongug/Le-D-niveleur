@@ -1,6 +1,7 @@
 """Altitude du terrain : dalles IGN RGE ALTI et lecture de l'altitude en un point."""
 
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
@@ -67,11 +68,22 @@ def telecharger_dalles(parametres: dict[str, Any], emprise: geo.Emprise, dossier
         x, y = coin
         nom = nom_dalle(x, y, resolution)
         destination = dossier_dalles / nom
-        tele.telecharger(url_dalle(parametres, x, y), destination)
-        image = tifffile.imread(destination)
-        if image.shape != (pixels, pixels):
-            destination.unlink()
-            raise ValueError(f"Dalle {nom} : taille inattendue {image.shape}.")
+        erreur: Exception | None = None
+        # Le service renvoie parfois une dalle incomplète : on vérifie et on réessaie.
+        for essai in range(1, parametres["essais_par_dalle"] + 1):
+            try:
+                tele.telecharger(url_dalle(parametres, x, y), destination)
+                image = tifffile.imread(destination)
+                if image.shape != (pixels, pixels):
+                    raise ValueError(f"taille inattendue {image.shape}")
+                break
+            except (ValueError, ConnectionError, OSError) as exc:
+                erreur = exc
+                destination.unlink(missing_ok=True)
+                journal.warning("Dalle %s, essai %d : %s", nom, essai, exc)
+                time.sleep(parametres["pause_entre_essais_s"] * essai)
+        else:
+            raise ConnectionError(f"Dalle {nom} impossible à télécharger : {erreur}")
         return nom, {
             "telecharge_le": tele.maintenant(),
             "taille_octets": destination.stat().st_size,

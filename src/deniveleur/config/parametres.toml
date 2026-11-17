@@ -38,6 +38,10 @@ resolution_m = 2
 taille_dalle_m = 2000
 # En dessous de cette valeur, le pixel est considéré comme « sans donnée ».
 altitude_min_valide = -100
+# Le service renvoie parfois une dalle incomplète : nombre d'essais, et pause (multipliée
+# par le numéro de l'essai) entre deux essais.
+essais_par_dalle = 4
+pause_entre_essais_s = 5
 
 [profil]
 # Distance entre deux points d'altitude le long d'un chemin.

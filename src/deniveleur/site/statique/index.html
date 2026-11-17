@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Le Déniveleur</title>
+  <meta name="description" content="Générateur de boucles trail à dénivelé maximal ou choisi, avec export GPX.">
+  <meta name="theme-color" content="#1f3b2d">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M2 26 L11 10 L16 18 L21 8 L30 26 Z' fill='%23e8622c'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/statique/vendor/maplibre-gl.css">
+  <link rel="stylesheet" href="/statique/style.css">
+</head>
+<body>
+  <header class="entete">
+    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M2 26 L11 10 L16 18 L21 8 L30 26 Z"/></svg>
+    <h1>Le Déniveleur</h1>
+    <span class="zone" id="zone"></span>
+  </header>
+
+  <main class="disposition">
+    <section class="carte-bloc">
+      <div id="carte" class="carte" role="application" aria-label="Carte : touchez pour placer le départ"></div>
+      <p class="aide-carte" id="aide-carte">Touche la carte pour placer le départ</p>
+    </section>
+
+    <section class="panneau">
+      <form id="formulaire" class="formulaire" novalidate>
+        <fieldset>
+          <legend>Départ</legend>
+          <div class="ligne-depart">
+            <span id="depart-texte" class="depart-texte">Rue Dailly, Saint-Cloud</span>
+            <button type="button" id="ma-position" class="bouton-secondaire">Ma position</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Distance</legend>
+          <div class="curseur-valeur">
+            <input type="range" id="distance" min="5" max="35" step="1" value="21" aria-label="Distance en kilomètres">
+            <output id="distance-valeur" for="distance">21 km</output>
+          </div>
+          <label class="petit">Tolérance
+            <select id="tolerance">
+              <option value="3">± 3 %</option>
+              <option value="5" selected>± 5 %</option>
+              <option value="10">± 10 %</option>
+            </select>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Dénivelé</legend>
+          <div class="choix" role="radiogroup">
+            <label><input type="radio" name="objectif" value="max" checked><span>Le plus possible</span></label>
+            <label><input type="radio" name="objectif" value="cible"><span>D+ visé</span></label>
+          </div>
+          <div class="curseur-valeur" id="bloc-cible" hidden>
+            <input type="range" id="dplus" min="50" max="1000" step="10" value="400" aria-label="D+ visé en mètres">
+            <output id="dplus-valeur" for="dplus">400 m</output>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Contraintes</legend>
+          <label class="interrupteur">
+            <input type="checkbox" id="sans-escaliers">
+            <span>Éviter les escaliers</span>
+          </label>
+          <label class="interrupteur">
+            <input type="checkbox" id="sentier-actif">
+            <span>Imposer une part de sentier</span>
+          </label>
+          <div class="curseur-valeur" id="bloc-sentier" hidden>
+            <input type="range" id="sentier" min="10" max="80" step="10" value="50" aria-label="Part minimale de sentier">
+            <output id="sentier-valeur" for="sentier">50 %</output>
+          </div>
+          <p class="note">Jamais deux fois le même chemin, jamais de demi-tour.</p>
+        </fieldset>
+
+        <details class="avance">
+          <summary>Réglages avancés</summary>
+          <label class="petit">Allure à plat (pour le temps estimé)
+            <input type="text" id="allure" inputmode="numeric" value="6:00" pattern="\d{1,2}:\d{2}" size="5"> /km
+          </label>
+          <label class="petit">Nombre de propositions
+            <select id="propositions">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3" selected>3</option>
+            </select>
+          </label>
+        </details>
+
+        <button type="submit" id="generer" class="bouton-principal">Trouver mes boucles</button>
+        <div id="progression" class="progression" hidden>
+          <div class="barre"><div id="barre-remplie"></div></div>
+          <p id="progression-texte">Recherche en cours…</p>
+        </div>
+        <p id="message" class="message" role="alert" hidden></p>
+      </form>
+
+      <div id="resultats" class="resultats" hidden>
+        <div id="onglets" class="onglets" role="tablist"></div>
+        <article id="fiche" class="fiche"></article>
+      </div>
+      <footer class="pied">
+    Chemins © <a href="https://www.openstreetmap.org/copyright">contributeurs OpenStreetMap</a> (ODbL) ·
+    Altitude et fond de carte © <a href="https://geoservices.ign.fr/">IGN</a> ·
+    D+ calculé sur le modèle de terrain IGN, à comparer avec votre montre
+      </footer>
+    </section>
+  </main>
+
+
+  <script src="/statique/vendor/maplibre-gl.js"></script>
+  <script src="/statique/app.js"></script>
+</body>
+</html>

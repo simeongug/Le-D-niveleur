@@ -73,9 +73,11 @@ def generer(
     propositions: int = 1,
     chemin_min: float = 0.0,
     escaliers: bool | None = None,
+    dplus_cible: float | None = None,
 ) -> tuple[list[Boucle], Rapport]:
     """Cherche les meilleures boucles de `distance_m` partant de (latitude, longitude).
 
+    `dplus_cible` : D+ visé en mètres (None = le plus de D+ possible).
     `chemin_min` : part minimale de sentier ou piste (0 à 1). `escaliers` : False
     pour les éviter (None = réglage par défaut).
 
@@ -95,11 +97,22 @@ def generer(
     )
     chemins = Chemins(graphe, reglages)
     recherche = Recherche(
-        graphe, chemins, evaluateur, distance_m, tolerance, reglages, graine, chemin_min
+        graphe,
+        chemins,
+        evaluateur,
+        distance_m,
+        tolerance,
+        reglages,
+        graine,
+        chemin_min,
+        dplus_cible,
     )
     preparation = time.perf_counter() - debut
     candidats, bilan = recherche.chercher(budget_s)
-    valides = sorted((c for c in candidats if c.valide), key=lambda c: -c.mesure.dplus_m)
+    if dplus_cible is None:
+        valides = sorted((c for c in candidats if c.valide), key=lambda c: -c.mesure.dplus_m)
+    else:
+        valides = sorted((c for c in candidats if c.valide), key=lambda c: -c.note)
     retenus = _differents(valides, graphe, propositions, reglages["difference_min_part"])
     boucles = [assembler(c.arcs, c.mesure, graphe, reseau, parametres["montees"]) for c in retenus]
     rapport = Rapport(

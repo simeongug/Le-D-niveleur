@@ -52,6 +52,11 @@ def construire_analyseur() -> argparse.ArgumentParser:
     boucle.add_argument("--sans-carte", action="store_true", help="n'écrit que le GPX")
     _options_communes(boucle)
 
+    site = commandes.add_parser("site", help="lance le site web")
+    site.add_argument("--hote", default="127.0.0.1", help="adresse d'écoute (0.0.0.0 = toutes)")
+    site.add_argument("--port", type=int, default=8000, help="port d'écoute")
+    _options_communes(site)
+
     denivele = commandes.add_parser("denivele", help="mesure le D+ d'un fichier GPX")
     denivele.add_argument("gpx", type=Path, help="fichier GPX à mesurer")
     _options_communes(denivele)
@@ -255,6 +260,19 @@ def main(arguments: Sequence[str] | None = None) -> int:
             )
     elif options.commande == "boucle":
         return generer_boucles(options)
+    elif options.commande == "site":
+        import uvicorn
+
+        from deniveleur.site.api import creer_application
+
+        print(f"Site sur http://{options.hote}:{options.port} (Ctrl+C pour arrêter)")
+        uvicorn.run(
+            creer_application(options.donnees, options.zone),
+            host=options.hote,
+            port=options.port,
+            proxy_headers=True,
+            log_level="info",
+        )
     elif options.commande == "denivele":
         mesurer_gpx(options.gpx, options.zone, options.donnees)
     else:

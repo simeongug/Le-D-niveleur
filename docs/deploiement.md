@@ -1,0 +1,86 @@
+# Mettre le site en ligne (Oracle Cloud, gratuit)
+
+Le site tourne sur un serveur gratuit d'Oracle Cloud (offre « Always Free »). Une fois
+installé, il se met à jour tout seul : chaque nouvelle version publiée sur la branche
+`main` de GitHub est installée dans les 15 minutes, et les chemins OpenStreetMap sont
+rafraîchis une fois par mois.
+
+## Ce qu'il faut faire une seule fois
+
+### 1. Créer le compte
+
+Sur **oracle.com/cloud/free** → « Start for free ». Région d'origine : **France Central
+(Paris)**. La carte bancaire sert à vérifier l'identité ; rien n'est facturé tant qu'on ne
+passe pas en compte payant (« Upgrade »).
+
+### 2. Créer le serveur
+
+Dans la console Oracle : menu ☰ → **Compute** → **Instances** → **Create instance**.
+
+| Réglage | Valeur |
+|---|---|
+| Name | `deniveleur` |
+| Image | **Canonical Ubuntu 24.04** (bouton « Change image ») |
+| Shape | « Change shape » → **Ampere** → **VM.Standard.A1.Flex**, 2 OCPU et 12 GB de mémoire (le maximum marqué « Always Free-eligible ») |
+| Networking | laisser les valeurs par défaut ; vérifier que « Assign a public IPv4 address » est coché |
+| Add SSH keys | « Generate a key pair for me » → télécharger la clé privée et la garder (elle sert seulement en cas de dépannage) |
+| Advanced options → Management → Initialization script | « Paste cloud-init script », puis coller **tout** le contenu de [`deploiement/cloud-init.yaml`](../deploiement/cloud-init.yaml) |
+
+Puis **Create**. Si Oracle répond « Out of capacity », réessayer un peu plus tard ou
+choisir un autre « Availability domain ».
+
+### 3. Ouvrir les portes du réseau
+
+Par défaut, Oracle bloque tout sauf la connexion d'administration. Sur la page du
+serveur : lien du **Subnet** → **Security Lists** → « Default Security List » → **Add
+Ingress Rules** :
+
+| Source CIDR | IP Protocol | Destination Port Range |
+|---|---|---|
+| `0.0.0.0/0` | TCP | `80,443` |
+
+### 4. Attendre et ouvrir le site
+
+Le serveur s'installe tout seul en 10 à 15 minutes (il télécharge les chemins et
+l'altitude, puis construit le réseau). L'adresse du site est construite à partir de
+l'adresse IP publique du serveur (indiquée sur sa page), en remplaçant les points par
+des tirets :
+
+```
+IP publique 152.67.12.34  →  https://152-67-12-34.sslip.io
+```
+
+`sslip.io` est un service gratuit qui fait pointer ce nom vers le serveur ; c'est ce qui
+permet d'avoir un vrai `https` (et donc le bouton « Ma position » sur téléphone) sans
+acheter de nom de domaine.
+
+## En cas de problème
+
+Se connecter au serveur (bouton « Cloud Shell » ou SSH avec la clé), puis :
+
+```bash
+sudo tail -50 /var/log/deniveleur-installation.log   # déroulé de l'installation
+sudo systemctl status deniveleur                      # le site tourne-t-il ?
+sudo journalctl -u deniveleur -n 50                   # ses derniers messages
+sudo journalctl -u deniveleur-maj -n 20               # les dernières mises à jour
+```
+
+Relancer l'installation (sans risque, elle reprend où elle en était) :
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/simeongug/Le-D-niveleur/main/deploiement/installer.sh | sudo bash
+```
+
+## Ce qui tourne sur le serveur
+
+| Élément | Rôle |
+|---|---|
+| `/opt/deniveleur` | le code, copie de GitHub |
+| `/var/lib/deniveleur` | les données (chemins, altitude, réseau) |
+| service `deniveleur` | le site, relancé automatiquement s'il s'arrête |
+| Caddy | reçoit les visites en `https` et obtient le certificat tout seul |
+| minuteur `deniveleur-maj` | toutes les 15 min : installe la dernière version de `main` |
+| minuteur `deniveleur-donnees` | une fois par mois : retélécharge les chemins OpenStreetMap |
+
+Un seul calcul tourne à la fois (environ 30 s) ; les demandes suivantes attendent leur
+tour, et la page affiche leur place dans la file.

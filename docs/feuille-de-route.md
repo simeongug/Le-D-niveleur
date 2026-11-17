@@ -27,14 +27,22 @@ avec au moins 50 % de sentier et sans escaliers, en moins de 30 secondes. Six ca
 référence dans [benchmarks/rapport.md](../benchmarks/rapport.md).
 **Reste à vérifier par Siméon :** importer un GPX dans Strava et comparer le D+ affiché.
 
-## 4. D+ cible et modèle de temps
+## 4. D+ cible et modèle de temps ✅ (en partie)
 
-Viser un D+ précis plutôt que le maximum ; estimer la durée de la sortie.
+Viser un D+ précis plutôt que le maximum, et estimer le temps de parcours.
+**Résultat :** sur 20 km depuis la rue Dailly, 200, 300, 400 et 500 m visés donnent
+200, 301, 400 et 501 m (critère : moins de 10 % d'écart). Le temps est estimé avec la
+règle « 100 m de D+ ≈ 1 km de plat » et une allure à plat réglable.
+**Reste à faire :** le mode « temps cible » (donner une durée plutôt qu'une distance),
+et l'allure calibrée sur les sorties Strava (étape 8).
 
-## 5. API et interface web
+## 5. Site web utilisable sur téléphone ✅
 
-Une page utilisable sur téléphone : choisir le départ, la distance, le D+, voir la
-carte et le profil, télécharger le GPX.
+Une page web : carte, réglages, propositions, profil, téléchargement du GPX. Installation
+automatique sur un serveur gratuit Oracle Cloud, mise à jour automatique depuis GitHub.
+**Résultat :** `deniveleur site` en local ; mise en ligne décrite dans
+[deploiement.md](deploiement.md).
+**Reste à vérifier par Siméon :** l'usage depuis son téléphone une fois en ligne.
 
 ## 6. Intervalles en côte
 

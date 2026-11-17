@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "deniveleur"
-version = "0.3.0"
+version = "0.4.0"
 description = "Générateur de boucles trail à dénivelé positif maximal ou ciblé, avec export GPX."
 readme = "README.md"
 requires-python = ">=3.11"

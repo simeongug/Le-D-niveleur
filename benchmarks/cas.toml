@@ -1,0 +1,42 @@
+# Cas de référence du moteur. `dplus_min_m` est le plancher en dessous duquel on
+# considère que le moteur a régressé (environ 85 % de ce qu'il obtient aujourd'hui).
+
+[[cas]]
+nom = "Saint-Cloud, rue Dailly — 21 km"
+depart = [48.8428, 2.2215]
+distance_km = 21
+dplus_min_m = 600
+note = "Objectif du projet : au moins 550 m de D+ sur 20-22 km."
+
+[[cas]]
+nom = "Saint-Cloud, rue Dailly — 25 km"
+depart = [48.8428, 2.2215]
+distance_km = 25
+dplus_min_m = 700
+note = "Référence tracée à la main dans Strava : 579 m de D+ sur 25,1 km."
+
+[[cas]]
+nom = "Saint-Cloud, rue Dailly — 21 km, 50 % de chemin, sans escaliers"
+depart = [48.8428, 2.2215]
+distance_km = 21
+chemin_min = 0.5
+escaliers = false
+dplus_min_m = 550
+
+[[cas]]
+nom = "Saint-Cloud, rue Dailly — 10 km"
+depart = [48.8428, 2.2215]
+distance_km = 10
+dplus_min_m = 280
+
+[[cas]]
+nom = "Meudon, gare de Val Fleury — 15 km"
+depart = [48.8075, 2.2410]
+distance_km = 15
+dplus_min_m = 400
+
+[[cas]]
+nom = "Chaville, gare Rive Droite — 15 km"
+depart = [48.8090, 2.1870]
+distance_km = 15
+dplus_min_m = 400

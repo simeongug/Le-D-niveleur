@@ -131,3 +131,104 @@ def dessiner(
     figure.savefig(sortie)
     plt.close(figure)
     return sortie
+
+
+def dessiner_boucle(
+    boucle: "Boucle",  # noqa: F821 - type défini dans deniveleur.moteur
+    parametres: dict[str, Any],
+    sortie: Path,
+    fond: Path | None,
+    emprise: geo.Emprise,
+    titre: str,
+) -> Path:
+    """Carte d'une boucle (tracé coloré par la pente) avec son profil d'altitude dessous."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import LineCollection
+    from matplotlib.lines import Line2D
+
+    ouest, sud, est, nord = emprise
+    paliers, couleurs = parametres["paliers_pente"], parametres["couleurs"]
+    x, y, z, d = boucle.x, boucle.y, boucle.altitudes, boucle.distances
+    positions = np.arange(0, len(x), PAS_PAR_SEGMENT)
+    if positions[-1] != len(x) - 1:
+        positions = np.append(positions, len(x) - 1)
+    pentes = np.abs(np.diff(z[positions])) / np.maximum(np.diff(d[positions]), 1e-6) * 100
+    classes = np.digitize(pentes, paliers)
+    segments = [
+        np.column_stack([x[a : b + 1], y[a : b + 1]])
+        for a, b in zip(positions[:-1], positions[1:], strict=True)
+    ]
+
+    largeur = 10.0
+    hauteur_carte = largeur * (nord - sud) / (est - ouest)
+    figure, (axe, axe_profil) = plt.subplots(
+        2,
+        1,
+        figsize=(largeur, hauteur_carte + 3.2),
+        dpi=160,
+        height_ratios=[hauteur_carte, 2.4],
+    )
+    if fond is not None:
+        image = plt.imread(fond)[..., :3]
+        gris = image.mean(axis=2, keepdims=True)
+        axe.imshow(0.35 + 0.65 * (0.5 * image + 0.5 * gris), extent=(ouest, est, sud, nord))
+    axe.add_collection(
+        LineCollection(segments, colors="white", linewidths=5.5, capstyle="round", zorder=2)
+    )
+    for classe, couleur in enumerate(couleurs):
+        choisis = [s for s, c in zip(segments, classes, strict=True) if c == classe]
+        axe.add_collection(
+            LineCollection(choisis, colors=couleur, linewidths=3.2, capstyle="round", zorder=3)
+        )
+    # Un repère par kilomètre pour lire le sens du parcours.
+    for km in range(1, int(d[-1] // 1000) + 1):
+        i = int(np.searchsorted(d, km * 1000))
+        axe.annotate(
+            str(km),
+            (x[i], y[i]),
+            ha="center",
+            va="center",
+            fontsize=6.5,
+            zorder=5,
+            bbox={"boxstyle": "circle,pad=0.15", "fc": "white", "ec": "#333333", "lw": 0.6},
+        )
+    axe.plot(
+        x[0], y[0], marker="*", color="black", markersize=18, markeredgecolor="white", zorder=6
+    )
+    bornes = [0, *paliers]
+    libelles = [f"{a} à {b} %" for a, b in zip(bornes[:-1], bornes[1:], strict=True)]
+    libelles.append(f"plus de {paliers[-1]} %")
+    axe.legend(
+        handles=[Line2D([0], [0], color=c, lw=3) for c in couleurs],
+        labels=libelles,
+        title="Pente",
+        loc="upper left",
+        framealpha=0.95,
+        fontsize=8,
+    )
+    axe.set_xlim(ouest, est)
+    axe.set_ylim(sud, nord)
+    axe.set_aspect("equal")
+    axe.set_axis_off()
+    axe.set_title(titre, fontsize=11)
+
+    km = d / 1000
+    axe_profil.fill_between(km, z, z.min() - 8, color="#d9d9d9")
+    axe_profil.plot(km, z, color="#444444", lw=0.8)
+    for montee in boucle.montees:
+        dans = (d >= montee.debut_m) & (d <= montee.debut_m + montee.longueur_m)
+        axe_profil.fill_between(km[dans], z[dans], z.min() - 8, color="#f0641e", alpha=0.75)
+    axe_profil.set_xlim(0, km[-1])
+    axe_profil.set_ylim(z.min() - 8, z.max() + 10)
+    axe_profil.set_xlabel("km")
+    axe_profil.set_ylabel("altitude (m)")
+    axe_profil.grid(alpha=0.3)
+    figure.text(0.5, 0.004, ATTRIBUTION, ha="center", fontsize=6.5, color="#444444")
+    figure.tight_layout()
+    sortie.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(sortie)
+    plt.close(figure)
+    return sortie

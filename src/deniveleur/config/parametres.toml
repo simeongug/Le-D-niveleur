@@ -55,3 +55,104 @@ taille_px = 3000
 # Bornes de pente (en %) pour les couleurs : plat, faux plat, côte, raide, mur.
 paliers_pente = [3, 6, 10, 15]
 couleurs = ["#2e9e4f", "#b5cf2d", "#f5b400", "#f0641e", "#c4002f"]
+
+[moteur]
+# --- Demande par défaut ---
+# Tolérance sur la distance demandée (0.05 = ±5 %).
+tolerance = 0.05
+# Temps de recherche en secondes (hors préparation, environ 3 s de plus).
+budget_s = 25
+# Où viser dans la tolérance : 0 = pile la distance demandée, 1 = le maximum permis.
+# Plus de distance donne plus de D+, on vise donc plutôt haut.
+visee_dans_tolerance = 0.6
+
+# --- Ce qu'on garde du réseau ---
+# Au-delà de cette pente, un tronçon (hors escalier) est jugé faux : mur, passage
+# souterrain mal décrit. Il est écarté.
+pente_max_plausible_pct = 45
+escaliers = true
+# Le départ est déplacé au carrefour utilisable le plus proche, dans cette limite.
+ecart_depart_max_m = 300
+# On ne regarde pas plus loin du départ que cette part de la distance demandée.
+rayon_max_part = 0.35
+# Nombre de points (espacés de 5 m) pour mesurer la direction d'un tronçon à un carrefour.
+portee_cap_points = 3
+
+# --- Ce qui est interdit ou pénalisé ---
+# Virage plus serré que cet angle = demi-tour.
+angle_demi_tour_deg = 160
+# Passage « en double » : repasser à moins d'une case ou deux d'un endroit déjà
+# traversé (deux trottoirs d'une même rue, deux allées collées).
+double_case_m = 15
+# … sauf si c'est la suite immédiate du parcours (moins de cette distance avant).
+double_ecart_min_m = 150
+# Un croisement n'est pas un passage en double : en dessous de cette longueur, on tolère.
+croisement_max_m = 80
+# Part de la distance qu'on tolère en double pour qu'une boucle soit acceptée.
+double_tolere_part = 0.005
+# Pénalités, en mètres de D+ retirés de la note.
+penalite_double_par_m = 0.3
+penalite_double_exact_par_m = 1.0
+penalite_demi_tour_m = 30
+penalite_trop_long_par_m = 0.25
+penalite_trop_court_par_m = 0.05
+
+# --- Points d'ancrage (hauts et bas de versants) ---
+ancre_case_m = 250
+ancre_relief_min_m = 8
+# Nombre d'ancres voisines envisagées à chaque étape.
+voisines = 40
+liaison_min_m = 120
+liaison_max_m = 2500
+
+# --- Construction d'une boucle en zigzag ---
+# Rayon du cercle-guide autour duquel tourne le parcours, en part de la distance.
+guide_rayon_part = [0.024, 0.105]
+# Écart toléré autour du cercle-guide, en part de la distance.
+guide_bande_part = 0.024
+# Force du rappel vers le cercle-guide (mètres de D+ par mètre d'écart).
+rappel_guide = [0.005, 0.03]
+# Ce que doit rapporter chaque mètre parcouru (mètres de D+ par mètre).
+cout_par_m = [0.01, 0.04]
+# Part de hasard dans le choix de l'étape suivante (en mètres de D+).
+bruit_m = 3
+# Quand la distance restante se resserre, on favorise ce qui rapproche du départ.
+rappel_depart = 0.06
+rappel_depart_des_part = 0.095
+# Marge gardée pour rentrer : distance au départ × ce facteur + ces mètres.
+marge_retour = 1.1
+marge_retour_m = 200
+# Si une liaison commence par rebrousser chemin sur plus de cette part, on la refuse.
+recul_max_part = 0.5
+# Nombre de cases déjà occupées qu'une liaison peut traverser (un croisement).
+recouvrement_max_cases = 6
+retours_arriere_max = 40
+
+# Quand une part minimale de chemin est demandée : mètres de D+ « offerts » par
+# mètre de sentier, pour orienter la recherche vers les chemins.
+prime_chemin_par_m = 0.03
+
+# --- Retour au départ ---
+# Pour rentrer, les tronçons déjà pris comptent cette fois plus longs, et ceux qui
+# les longent (au moins cette part de leurs cases) aussi.
+retour_penalite_pris = 50
+retour_penalite_proche = 8
+retour_part_proche = 0.5
+# Si le retour ne passe pas, on recule d'une étape, jusqu'à ce nombre de fois.
+fermetures_max = 6
+
+# --- Pilotage de la recherche ---
+# Part du temps passée à explorer au hasard, avant d'approfondir les meilleures pistes.
+part_exploration = 0.4
+guides_gardes = 6
+variation_guide = 0.15
+# Deux propositions doivent différer sur au moins cette part de leur longueur.
+difference_min_part = 0.4
+
+[montees]
+# Une montée « principale » gagne au moins cette hauteur…
+denivele_min_m = 15
+# … sans redescendre de plus de ceci en chemin.
+replat_max_m = 6
+# Fenêtre de mesure de la pente maximale.
+fenetre_pente_m = 50

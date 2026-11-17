@@ -48,6 +48,7 @@ def test_voies_aller_retour_sur_disque(tmp_path):
 def test_variantes_repli_http():
     assert telechargement.variantes("https://exemple.fr/a") == [
         "https://exemple.fr/a",
+        "https://exemple.fr/a",
         "http://exemple.fr/a",
     ]
 

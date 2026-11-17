@@ -189,7 +189,7 @@ def generer_boucles(options: argparse.Namespace) -> int:
     if rapport.ecart_depart_m > 50:
         print(f"Départ déplacé de {rapport.ecart_depart_m:.0f} m vers le chemin le plus proche.")
     for rang, boucle in enumerate(boucles, 1):
-        nom = f"boucle-{boucle.distance_m / 1000:.0f}km-{boucle.dplus_m:.0f}m"
+        nom = f"boucle-{boucle.distance_m / 1000:.1f}km-{boucle.dplus_m:.0f}m"
         if len(boucles) > 1:
             nom += f"-{rang}"
         titre = (

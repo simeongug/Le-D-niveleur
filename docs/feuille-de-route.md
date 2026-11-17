@@ -17,13 +17,15 @@ reste de l'Île-de-France viendra à l'étape 8.
 la pente, et un D+ comparé à Strava sur quatre sorties (+2 % au total, voir
 [validation-denivele.md](validation-denivele.md)).
 
-## 3. Moteur en ligne de commande
+## 3. Moteur en ligne de commande ✅
 
 Depuis un point de départ et une distance, trouver la boucle au D+ maximal et l'écrire
 en GPX.
-**Résultat :** un GPX de 20-22 km à charger dans Strava.
-**Critère de réussite :** au moins 550 m de D+, sans portion en double, en moins d'une
-minute.
+**Résultat :** la commande `deniveleur boucle`, qui donne un ou plusieurs GPX avec leur
+carte et leur profil. Depuis la rue Dailly : 759 m de D+ sur 21,5 km, ou environ 690 m
+avec au moins 50 % de sentier et sans escaliers, en moins de 30 secondes. Six cas de
+référence dans [benchmarks/rapport.md](../benchmarks/rapport.md).
+**Reste à vérifier par Siméon :** importer un GPX dans Strava et comparer le D+ affiché.
 
 ## 4. D+ cible et modèle de temps
 

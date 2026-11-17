@@ -68,7 +68,7 @@ def reperer_montees(
             elif altitudes[haut] - altitude > replat:
                 montees.append((bas, haut))
                 bas, monte = position, False
-        elif altitude < altitudes[bas]:
+        elif altitude <= altitudes[bas]:  # sur un plat, le pied de côte avance
             bas = position
         elif altitude - altitudes[bas] > replat:
             haut, monte = position, True

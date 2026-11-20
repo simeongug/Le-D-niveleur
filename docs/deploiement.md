@@ -62,7 +62,7 @@ La zone `chevreuse-velo` est plus grosse que celle de la course à pied. Avant d
 sudo bash /opt/deniveleur/deploiement/construire-velo.sh
 ```
 
-Le script refuse de démarrer s'il manque de la place sur le disque, plafonne la mémoire de la construction (7 Go sur 12 par défaut, réglable avec `LIMITE_MEMOIRE`) pour qu'un dépassement arrête la construction et jamais le site, puis affiche la mémoire maximale de la construction, la mémoire que prendra le site avec ce réseau, et la taille sur le disque. Il ne touche ni au réseau de la course à pied ni au service. À lancer à un moment calme, sans l'avoir testé sur Oracle : si une ligne d'erreur apparaît, la transmettre telle quelle.
+Le script refuse de démarrer s'il manque de la place sur le disque, plafonne la mémoire de la construction (65 % de la mémoire du serveur par défaut, réglable avec `LIMITE_MEMOIRE`) pour qu'un dépassement arrête la construction et jamais le site, puis affiche la mémoire maximale de la construction, la mémoire que prendra le site avec ce réseau, et la taille sur le disque. Il ne touche ni au réseau de la course à pied ni au service. À lancer à un moment calme, sans l'avoir testé sur Oracle : si une ligne d'erreur apparaît, la transmettre telle quelle.
 
 ## En cas de problème
 

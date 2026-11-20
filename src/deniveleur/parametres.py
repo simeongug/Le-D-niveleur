@@ -37,7 +37,7 @@ def _charger(profil: str) -> dict[str, Any]:
             fusion.setdefault(section, {}).update(copy.deepcopy(valeurs))
         else:
             fusion[section] = valeurs
-    fusion["profil"] = profil
+    fusion["nom_profil"] = profil
     return fusion
 
 

@@ -162,6 +162,26 @@ variation_guide = 0.15
 # Deux propositions doivent différer sur au moins cette part de leur longueur.
 difference_min_part = 0.4
 
+[intervalles]
+# Une côte d'intervalles : longueur, dénivelé net et pente moyenne acceptables.
+longueur_min_m = 150
+longueur_max_m = 1500
+denivele_min_m = 20
+pente_moyenne_min_pct = 4
+pente_moyenne_max_pct = 30
+# La côte doit monter presque tout le long : D+ net ≥ cette part du D+ cumulé.
+rectitude_min = 0.85
+# Nombre de côtes pré-sélectionnées dont on construit le parcours complet.
+candidats_max = 200
+# Pour revenir au départ, les tronçons de l'échauffement et de la côte comptent ce
+# nombre de fois plus longs (on rentre par un autre chemin si ce n'est pas trop long).
+retour_penalite = 4
+# Deux propositions doivent avoir leurs pieds de côte à au moins cette distance.
+distance_min_entre_cotes_m = 150
+# Nombre de répétitions permises dans l'interface.
+repetitions_min = 2
+repetitions_max = 20
+
 [montees]
 # Une montée « principale » gagne au moins cette hauteur…
 denivele_min_m = 15

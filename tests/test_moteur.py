@@ -196,3 +196,21 @@ def test_doublons_autorises_ne_reduisent_pas_le_dplus():
     avec, _ = _generer(doublons=True)
     assert sans and avec
     assert avec[0].dplus_m >= 0.9 * sans[0].dplus_m
+
+
+def test_intervalles_repetent_la_meme_cote():
+    boucles, rapport = _generer(repetitions=3, propositions=2)
+    assert boucles, "aucune séance trouvée"
+    boucle = boucles[0]
+    assert 4750 <= boucle.distance_m <= 5250
+    plan = boucle.intervalles
+    assert plan is not None and plan.repetitions == 3
+    assert len(boucle.montees) >= 3
+    total = plan.echauffement_m + 3 * 2 * plan.montee_m + plan.retour_m
+    assert total == pytest.approx(boucle.distance_m, rel=0.01)
+    assert (boucle.x[0], boucle.y[0]) == pytest.approx((boucle.x[-1], boucle.y[-1]))
+
+
+def test_intervalles_impossibles_donnent_zero_proposition():
+    boucles, _ = _generer(repetitions=20)
+    assert boucles == []

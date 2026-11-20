@@ -28,6 +28,17 @@ class Montee:
 
 
 @dataclass
+class Intervalles:
+    """Structure d'une séance d'intervalles : échauffement, N × (montée + redescente), retour."""
+
+    repetitions: int
+    echauffement_m: float
+    montee_m: float  # longueur d'une montée (la redescente fait la même longueur)
+    denivele_m: float  # D+ d'une montée
+    retour_m: float
+
+
+@dataclass
 class Boucle:
     longitudes: Tableau
     latitudes: Tableau
@@ -46,6 +57,7 @@ class Boucle:
     montees: list[Montee] = field(default_factory=list)
     alertes: list[str] = field(default_factory=list)
     troncons: NDArray[np.int32] = field(default_factory=lambda: np.empty(0, np.int32))
+    intervalles: Intervalles | None = None
 
 
 def reperer_montees(
@@ -95,8 +107,13 @@ def assembler(
     graphe: Graphe,
     reseau: Reseau,
     reglages_montees: dict[str, Any],
+    structure: tuple[int, int, int, int] | None = None,
 ) -> Boucle:
-    """Transforme une suite d'arcs en boucle complète, avec ses chiffres et ses montées."""
+    """Transforme une suite d'arcs en boucle complète, avec ses chiffres et ses montées.
+
+    `structure` : pour une séance d'intervalles, (répétitions, arcs d'échauffement, arcs
+    d'une montée, arcs de retour).
+    """
     depart = int(graphe.arc_de[arcs[0]])
     x = np.concatenate([[graphe.x[depart]], *[graphe.points(arc)[0] for arc in arcs]])
     y = np.concatenate([[graphe.y[depart]], *[graphe.points(arc)[1] for arc in arcs]])
@@ -142,12 +159,33 @@ def assembler(
 
     escaliers = float(longueurs[reseau.escalier[troncons]].sum())
     alertes = []
-    if mesure.double_m > 0:
-        alertes.append(f"{mesure.double_m:.0f} m passent tout près d'une autre partie du parcours")
-    if mesure.double_exact_m > 0:
-        alertes.append(f"{mesure.double_exact_m:.0f} m sont empruntés deux fois")
-    if mesure.demi_tours:
-        alertes.append(f"{mesure.demi_tours} demi-tour(s)")
+    intervalles = None
+    if structure is not None:
+        repetitions, n_echauffement, n_montee, n_retour = structure
+        # Distance cumulée à la fin de chaque morceau (un arc = len(profils[arc]) points).
+        fins = np.cumsum([0, *(len(graphe.profils[arc]) for arc in arcs)])
+        fin_echauffement = float(distances[fins[n_echauffement]])
+        fin_montee = float(distances[fins[n_echauffement + n_montee]])
+        intervalles = Intervalles(
+            repetitions=repetitions,
+            echauffement_m=fin_echauffement,
+            montee_m=fin_montee - fin_echauffement,
+            denivele_m=float(z[fins[n_echauffement + n_montee]] - z[fins[n_echauffement]]),
+            retour_m=float(distances[-1] - distances[fins[len(arcs) - n_retour]]),
+        )
+        alertes.append(
+            f"{repetitions} montées de {intervalles.montee_m:.0f} m "
+            f"(+{intervalles.denivele_m:.0f} m), redescente par le même chemin"
+        )
+    else:
+        if mesure.double_m > 0:
+            alertes.append(
+                f"{mesure.double_m:.0f} m passent tout près d'une autre partie du parcours"
+            )
+        if mesure.double_exact_m > 0:
+            alertes.append(f"{mesure.double_exact_m:.0f} m sont empruntés deux fois")
+        if mesure.demi_tours:
+            alertes.append(f"{mesure.demi_tours} demi-tour(s)")
     if escaliers > 0:
         alertes.append(f"{escaliers:.0f} m d'escaliers")
     alertes.append(
@@ -171,4 +209,5 @@ def assembler(
         montees=montees,
         alertes=alertes,
         troncons=np.unique(troncons),
+        intervalles=intervalles,
     )

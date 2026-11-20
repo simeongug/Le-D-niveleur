@@ -119,3 +119,15 @@ retenue, pour avoir de vrais choix différents.
   sous-estimée.
 - Les horaires d'ouverture des parcs et les zones fermées ne sont pas pris en compte
   (étape 7).
+
+## Séances d'intervalles (`intervalles.py`)
+
+Ici les demi-tours et les passages en double sont voulus, donc le moteur ordinaire n'est
+pas utilisé. On passe en revue toutes les côtes possibles autour du départ (d'un point
+d'ancrage à un voisin) et on garde celles qui montent presque tout le long (D+ net d'au
+moins 85 % du D+ cumulé), entre 150 m et 1,5 km, avec 4 à 30 % de pente moyenne. Pour
+chacune, longueur totale = échauffement + N × (montée + redescente) + retour ; on écarte
+ce qui sort de la tolérance, puis on garde les plus riches en D+, avec des pieds de côte
+distants d'au moins 150 m. Le retour compte l'échauffement et la côte comme 4 fois plus
+longs pour rentrer par un autre chemin quand ce n'est pas trop long. Réglages : section
+`[intervalles]` de `parametres.toml`.

@@ -54,6 +54,11 @@ def construire_analyseur() -> argparse.ArgumentParser:
         "--sans-bitume", action="store_true", help="écarte les voies à revêtement dur"
     )
     boucle.add_argument(
+        "--repetitions",
+        type=int,
+        help="séance d'intervalles : monter N fois la même côte (2 à 20)",
+    )
+    boucle.add_argument(
         "--doublons", action="store_true", help="autorise à repasser sur un même chemin"
     )
     boucle.add_argument("--graine", type=int, default=0, help="change le tirage au hasard")
@@ -199,6 +204,7 @@ def generer_boucles(options: argparse.Namespace) -> int:
         pente_max_pct=options.pente_max,
         sans_bitume=options.sans_bitume,
         doublons=options.doublons,
+        repetitions=options.repetitions,
     )
     if not boucles:
         print("Aucune boucle valide trouvée. Essayer une autre distance ou plus de temps.")

@@ -71,3 +71,14 @@ je compléterai alors `benchmarks/rapport.md` avec les chiffres réels.
 ## 8. Options
 
 Connexion Strava, autres régions, hébergement public (budget : 0 €).
+
+## 9. Vélo de route (en cours)
+
+Même fonctionnement à vélo de route, pour des sorties de 50 à 80 km autour de Saint-Cloud
+(voir [la décision 6](decisions/0006-profil-velo-route.md)).
+**Fait :** profil `velo-route` (voies, revêtement, pentes, temps estimé), zone
+`chevreuse-velo`.
+**Reste à faire :** télécharger et construire les données de la zone sur le serveur
+(`deniveleur donnees tout --zone chevreuse-velo`), un premier essai réel et le réglage du
+moteur, puis un choix course / vélo dans le site.
+

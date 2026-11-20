@@ -93,7 +93,7 @@ def afficher_regions() -> None:
 def telecharger(zone: str, dossier: Path) -> None:
     from deniveleur.donnees import altitude, osm
 
-    reglages = parametres.charger()
+    reglages = parametres.charger(parametres.profil_de(zone))
     emprise = tuple(parametres.zone(zone)["emprise_l93"])
     fichier = osm.telecharger_extrait(reglages["osm"], dossier)
     print(f"Chemins OpenStreetMap : {fichier.name}")
@@ -108,7 +108,7 @@ def construire_reseau(zone: str, dossier: Path) -> None:
     from deniveleur.donnees import altitude, osm
     from deniveleur.donnees import telechargement as tele
 
-    reglages = parametres.charger()
+    reglages = parametres.charger(parametres.profil_de(zone))
     emprise = tuple(parametres.zone(zone)["emprise_l93"])
     manifeste = tele.lire_manifeste(dossier)
     if "osm" not in manifeste:
@@ -141,7 +141,7 @@ def dessiner_carte(
     from deniveleur import carte, geo
     from deniveleur.reseau import Reseau
 
-    reglages = parametres.charger()
+    reglages = parametres.charger(parametres.profil_de(zone))
     fiche = parametres.zone(zone)
     emprise = tuple(fiche["emprise_l93"])
     reperes = []
@@ -172,7 +172,7 @@ def mesurer_gpx(gpx: Path, zone: str, dossier: Path) -> None:
     from deniveleur import trace
     from deniveleur.donnees.altitude import ModeleAltitude
 
-    reglages = parametres.charger()
+    reglages = parametres.charger(parametres.profil_de(zone))
     emprise = tuple(parametres.zone(zone)["emprise_l93"])
     modele = ModeleAltitude.charger(reglages["altitude"], emprise, dossier)
     longitudes, latitudes = trace.lire_gpx(gpx)
@@ -186,7 +186,7 @@ def generer_boucles(options: argparse.Namespace) -> int:
     from deniveleur import carte, fit, gpx, moteur
     from deniveleur.reseau import Reseau
 
-    reglages = parametres.charger()
+    reglages = parametres.charger(parametres.profil_de(options.zone))
     latitude, longitude = (float(v) for v in options.depart.split(","))
     reseau = Reseau.charger(options.donnees / options.zone)
     boucles, rapport = moteur.generer(

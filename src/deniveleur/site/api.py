@@ -57,7 +57,10 @@ def creer_application(
     emprise_l93: tuple[float, float, float, float] | None = None,
 ) -> FastAPI:
     """Construit le site. `reglages` et `emprise_l93` servent aux tests (terrain d'essai)."""
-    reglages = reglages or parametres.charger()
+    if reglages is None:
+        reglages = parametres.charger(
+            parametres.profil_de(zone) if emprise_l93 is None else parametres.PROFIL_PAR_DEFAUT
+        )
     fiche_zone = parametres.zone(zone) if emprise_l93 is None else {"nom": zone}
     emprise = emprise_l93 or tuple(fiche_zone["emprise_l93"])
     etat: dict[str, Any] = {}

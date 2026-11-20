@@ -74,7 +74,23 @@
             <input type="range" id="sentier" min="10" max="80" step="10" value="50" aria-label="Part minimale de sentier">
             <output id="sentier-valeur" for="sentier">50 %</output>
           </div>
-          <p class="note">Jamais deux fois le même chemin, jamais de demi-tour.</p>
+          <label class="interrupteur">
+            <input type="checkbox" id="sans-bitume">
+            <span>Éviter le bitume</span>
+          </label>
+          <label class="interrupteur">
+            <input type="checkbox" id="pente-active">
+            <span>Limiter la pente</span>
+          </label>
+          <div class="curseur-valeur" id="bloc-pente" hidden>
+            <input type="range" id="pente" min="10" max="40" step="5" value="25" aria-label="Pente maximale">
+            <output id="pente-valeur" for="pente">25 %</output>
+          </div>
+          <label class="interrupteur">
+            <input type="checkbox" id="doublons">
+            <span>Autoriser à repasser par le même chemin</span>
+          </label>
+          <p class="note">Jamais de demi-tour. Sans l'interrupteur « repasser », jamais deux fois le même chemin.</p>
         </fieldset>
 
         <details class="avance">

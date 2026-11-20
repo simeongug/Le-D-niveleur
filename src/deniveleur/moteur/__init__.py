@@ -74,12 +74,18 @@ def generer(
     chemin_min: float = 0.0,
     escaliers: bool | None = None,
     dplus_cible: float | None = None,
+    pente_max_pct: float | None = None,
+    sans_bitume: bool = False,
+    doublons: bool = False,
 ) -> tuple[list[Boucle], Rapport]:
     """Cherche les meilleures boucles de `distance_m` partant de (latitude, longitude).
 
     `dplus_cible` : D+ visé en mètres (None = le plus de D+ possible).
     `chemin_min` : part minimale de sentier ou piste (0 à 1). `escaliers` : False
-    pour les éviter (None = réglage par défaut).
+    pour les éviter (None = réglage par défaut). `pente_max_pct` : écarte les tronçons
+    plus raides (None = pas de limite). `sans_bitume` : écarte les voies à revêtement
+    dur. `doublons` : autorise à repasser sur un même tronçon (les demi-tours restent
+    interdits).
 
     Renvoie les boucles valides, de la plus riche en D+ à la moins riche (liste
     vide si aucune n'a été trouvée), et un rapport de recherche.
@@ -87,6 +93,9 @@ def generer(
     reglages = dict(parametres["moteur"])
     if escaliers is not None:
         reglages["escaliers"] = escaliers
+    reglages["pente_max_pct"] = pente_max_pct
+    reglages["sans_bitume"] = sans_bitume
+    reglages["doublons"] = doublons
     tolerance = reglages["tolerance"] if tolerance is None else tolerance
     budget_s = reglages["budget_s"] if budget_s is None else budget_s
     debut = time.perf_counter()

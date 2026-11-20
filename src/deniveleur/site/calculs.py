@@ -31,6 +31,9 @@ class Demande:
     dplus_cible: float | None
     chemin_min_pct: float
     sans_escaliers: bool
+    pente_max_pct: float | None
+    sans_bitume: bool
+    doublons: bool
     propositions: int
     allure_s_par_km: float
 
@@ -127,6 +130,9 @@ class FileDeCalculs:
             propositions=d.propositions,
             chemin_min=d.chemin_min_pct / 100,
             escaliers=False if d.sans_escaliers else None,
+            pente_max_pct=d.pente_max_pct,
+            sans_bitume=d.sans_bitume,
+            doublons=d.doublons,
             dplus_cible=d.dplus_cible,
         )
         calcul.boucles = boucles

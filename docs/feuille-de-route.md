@@ -48,10 +48,17 @@ automatique sur un serveur gratuit Oracle Cloud, mise à jour automatique depuis
 
 Insérer dans la boucle des répétitions sur une côte choisie.
 
-## 7. Préférences avancées
+## 7. Préférences avancées ✅ (en partie)
 
-Un interrupteur oui/non pour chacune : pente maximale, escaliers, type de surface,
-portions en double.
+Un interrupteur oui/non pour chacune, dans le site (`Contraintes`) et en ligne de commande :
+escaliers (`--sans-escaliers`), part de sentier (`--chemin-min`), pente maximale
+(`--pente-max 25`), pas de bitume (`--sans-bitume`), repasser par le même chemin
+(`--doublons`). Les demi-tours restent toujours interdits.
+**Résultat :** tests sur le terrain d'essai ; si les préférences ne laissent aucune
+boucle, le message le dit clairement.
+**Reste à vérifier par Siméon :** essayer chaque interrupteur sur les vraies données depuis
+la rue Dailly (je n'ai pas pu télécharger OpenStreetMap / IGN depuis mon environnement) ;
+je compléterai alors `benchmarks/rapport.md` avec les chiffres réels.
 
 ## 8. Options
 

@@ -22,7 +22,7 @@ def altitude_terrain(x: np.ndarray, y: np.ndarray) -> np.ndarray:
 
 
 @cache
-def reseau_essai() -> reseau.Reseau:
+def reseau_essai(tout_en_chemin: bool = False) -> reseau.Reseau:
     centres = np.arange(1.0, COTE + 200, 2.0)
     gx, gy = np.meshgrid(centres, centres[::-1])
     modele = ModeleAltitude(
@@ -48,7 +48,9 @@ def reseau_essai() -> reseau.Reseau:
                 [j * nombre + i for j in range(nombre)],
                 [valeur] * nombre,
                 list(lignes),
-                {"highway": "residential", "name": f"Rue {i}"},
+                {"highway": "path"}
+                if tout_en_chemin
+                else {"highway": "residential", "name": f"Rue {i}"},
             )
         )
     return reseau.construire(voies, modele, PARAMETRES)
@@ -157,3 +159,40 @@ def test_reperer_montees():
     bas, haut = montees[0]
     assert distances[bas] == pytest.approx(100)
     assert distances[haut] == pytest.approx(500)
+
+
+def _generer(tout_en_chemin=False, **options):
+    latitude, longitude = depart_gps()
+    return moteur.generer(
+        reseau_essai(tout_en_chemin), PARAMETRES, latitude, longitude, 5000, budget_s=3, **options
+    )
+
+
+def test_pente_max_ecarte_les_troncons_raides():
+    r = reseau_essai()
+    pente = float(np.percentile(r.pente_max[~r.escalier], 60))
+    boucles, _ = _generer(pente_max_pct=pente)
+    if not boucles:
+        pytest.skip("aucune boucle sous cette pente sur le terrain d'essai")
+    interdits = set(np.flatnonzero(r.pente_max > pente))
+    assert not interdits & set(boucles[0].troncons.tolist())
+
+
+def test_sans_bitume_n_emprunte_que_des_chemins():
+    r = reseau_essai(True)
+    boucles, _ = _generer(tout_en_chemin=True, sans_bitume=True)
+    assert boucles
+    assert r.chemin[boucles[0].troncons].all()
+
+
+def test_sans_bitume_sans_assez_de_chemins_donne_un_message_clair():
+    # Ici seules les rues est-ouest sont des sentiers : aucune boucle n'est possible.
+    with pytest.raises(ValueError, match="préférences"):
+        _generer(sans_bitume=True)
+
+
+def test_doublons_autorises_ne_reduisent_pas_le_dplus():
+    sans, _ = _generer()
+    avec, _ = _generer(doublons=True)
+    assert sans and avec
+    assert avec[0].dplus_m >= 0.9 * sans[0].dplus_m

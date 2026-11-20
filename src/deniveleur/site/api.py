@@ -40,6 +40,9 @@ class DemandeWeb(BaseModel):
     dplus_cible: float | None = Field(default=None, ge=0, le=3000)
     chemin_min_pct: float = Field(default=0, ge=0, le=90)
     sans_escaliers: bool = False
+    pente_max_pct: float | None = Field(default=None, ge=5, le=45)
+    sans_bitume: bool = False
+    doublons: bool = False
     propositions: int = Field(default=3, ge=1, le=3)
     allure_s_par_km: float | None = Field(default=None, ge=150, le=1200)
 
@@ -112,6 +115,9 @@ def creer_application(
                     dplus_cible=demande.dplus_cible,
                     chemin_min_pct=demande.chemin_min_pct,
                     sans_escaliers=demande.sans_escaliers,
+                    pente_max_pct=demande.pente_max_pct,
+                    sans_bitume=demande.sans_bitume,
+                    doublons=demande.doublons,
                     propositions=demande.propositions,
                     allure_s_par_km=allure,
                 )

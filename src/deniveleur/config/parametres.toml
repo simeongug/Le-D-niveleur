@@ -268,6 +268,10 @@ calculs_gardes = 200
 pas_trace_m = 20
 # Point de départ proposé à l'ouverture : rue Dailly, Saint-Cloud.
 depart_defaut = [48.8428, 2.2215]
+# Bord de zone : un départ à moins de cette part du rayon de recherche
+# (distance × moteur.rayon_max_part) d'un bord de la zone est signalé, car les
+# boucles y sont tronquées. La carte du site dessine cette bande.
+bord_alerte_part = 0.3
 
 # ----------------------------------------------------------------------------
 # Profils : ne redisent que ce qui change par rapport aux réglages de base.

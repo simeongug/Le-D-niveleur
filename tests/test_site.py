@@ -45,6 +45,24 @@ def test_page_et_infos(client):
     assert len(infos["couleurs_pente"]) == len(infos["paliers_pente"]) + 1
 
 
+def test_contour_de_la_zone(client):
+    # La carte dessine la zone à partir de ses 4 coins exacts, et la bande du bord à
+    # partir des deux réglages du moteur et du site.
+    infos = client.get("/api/infos").json()
+    contour = infos["contour"]
+    assert len(contour) == 4
+    sud_ouest, sud_est, nord_est, nord_ouest = contour
+    # Sud-ouest → sud-est → nord-est → nord-ouest : sens inverse des aiguilles d'une montre.
+    assert sud_est[0] > sud_ouest[0] and nord_est[1] > sud_est[1] and nord_ouest[0] < nord_est[0]
+    # Le rectangle « emprise » (entièrement dans la zone) est contenu dans le contour.
+    ouest, sud, est, nord = infos["emprise"]
+    assert min(c[0] for c in contour) <= ouest < est <= max(c[0] for c in contour)
+    assert min(c[1] for c in contour) <= sud < nord <= max(c[1] for c in contour)
+    reglages = parametres.charger()
+    assert infos["rayon_max_part"] == reglages["moteur"]["rayon_max_part"]
+    assert 0 < infos["bord_alerte_part"] <= 1
+
+
 def test_calcul_complet_et_gpx(client):
     reponse = client.post("/api/calculs", json=demande(propositions=2))
     assert reponse.status_code == 202

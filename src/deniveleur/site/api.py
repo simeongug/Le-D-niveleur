@@ -105,6 +105,14 @@ def creer_application(
             "budget_s": reglages["site"]["budget_s"],
             "paliers_pente": reglages["carte"]["paliers_pente"],
             "couleurs_pente": reglages["carte"]["couleurs"],
+            # Coins exacts de la zone (sud-ouest, sud-est, nord-est, nord-ouest), en
+            # [longitude, latitude] : la carte dessine la zone et refuse un départ hors zone.
+            "contour": [
+                [float(lon), float(lat)] for lon, lat in zip(longitudes, latitudes, strict=True)
+            ],
+            # Pour dessiner la bande « bord de zone », qui dépend de la distance choisie.
+            "rayon_max_part": reglages["moteur"]["rayon_max_part"],
+            "bord_alerte_part": reglages["site"]["bord_alerte_part"],
         }
 
     @app.post("/api/calculs", status_code=202)
@@ -114,7 +122,8 @@ def creer_application(
         ouest, sud, est, nord = emprise
         if not (ouest <= x[0] <= est and sud <= y[0] <= nord):
             raise HTTPException(422, "Le départ est en dehors de la zone couverte.")
-        if min(x[0] - ouest, est - x[0], y[0] - sud, nord - y[0]) < rayon * 0.3:
+        bord = rayon * reglages["site"]["bord_alerte_part"]
+        if min(x[0] - ouest, est - x[0], y[0] - sud, nord - y[0]) < bord:
             journal.info("Départ proche du bord de la zone : boucles possiblement limitées.")
         if demande.type == "cotes":
             allure = demande.allure_s_par_km or reglages["cotes"]["allure_s_par_km"]

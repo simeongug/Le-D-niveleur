@@ -68,7 +68,112 @@ const carte = new maplibregl.Map({
 });
 carte.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
+// ------------------------------------------------------------- zone couverte
+// La zone est un rectangle en Lambert-93 (quelques dizaines de km). À cette échelle,
+// une projection locale en mètres suffit pour dessiner la bande du bord et mesurer la
+// distance du départ au bord : l'écart avec le calcul exact du serveur reste < 1 %.
+
+const M_PAR_DEGRE = 111320;
+
+function versMetres([lon, lat]) {
+  const [lon0, lat0] = etat.infos.contour[0];
+  const k = Math.cos((lat0 * Math.PI) / 180);
+  return [(lon - lon0) * M_PAR_DEGRE * k, (lat - lat0) * M_PAR_DEGRE];
+}
+function versDegres([x, y]) {
+  const [lon0, lat0] = etat.infos.contour[0];
+  const k = Math.cos((lat0 * Math.PI) / 180);
+  return [lon0 + x / (M_PAR_DEGRE * k), lat0 + y / M_PAR_DEGRE];
+}
+
+// Distance au bord le plus proche, en mètres : positive dans la zone, négative dehors.
+function distanceAuBord(longitude, latitude) {
+  const p = versMetres([longitude, latitude]);
+  const coins = etat.infos.contour.map(versMetres);
+  let mini = Infinity;
+  for (let i = 0; i < coins.length; i++) {
+    const a = coins[i], b = coins[(i + 1) % coins.length];
+    const ux = b[0] - a[0], uy = b[1] - a[1];
+    // Coins dans le sens inverse des aiguilles d'une montre : l'intérieur est à gauche.
+    mini = Math.min(mini, (ux * (p[1] - a[1]) - uy * (p[0] - a[0])) / Math.hypot(ux, uy));
+  }
+  return mini;
+}
+
+// Largeur de la bande « bord de zone » pour la distance choisie (même règle que le
+// serveur), ou 0 en mode côtes, où la distance de boucle ne compte pas.
+function largeurBord() {
+  if (!etat.infos || choixCoche("mode") === "cotes") return 0;
+  return Number($("distance").value) * 1000 * etat.infos.rayon_max_part * etat.infos.bord_alerte_part;
+}
+
+// Rectangle intérieur, en retrait de `marge` mètres sur chaque bord ; null s'il est vide.
+function rectangleInterieur(marge) {
+  const coins = etat.infos.contour.map(versMetres);
+  const n = coins.length;
+  const cotes = coins.map((c, i) => Math.hypot(coins[(i + 1) % n][0] - c[0], coins[(i + 1) % n][1] - c[1]));
+  if (2 * marge >= Math.min(...cotes)) return null;
+  return coins.map((c, i) => {
+    const suivant = coins[(i + 1) % n], precedent = coins[(i + n - 1) % n];
+    const ls = Math.hypot(suivant[0] - c[0], suivant[1] - c[1]);
+    const lp = Math.hypot(precedent[0] - c[0], precedent[1] - c[1]);
+    return versDegres([
+      c[0] + marge * ((suivant[0] - c[0]) / ls + (precedent[0] - c[0]) / lp),
+      c[1] + marge * ((suivant[1] - c[1]) / ls + (precedent[1] - c[1]) / lp),
+    ]);
+  });
+}
+
+function anneau(coins) { return [...coins, coins[0]]; }
+// Un trou doit tourner dans l'autre sens que l'anneau extérieur, sinon la carte le
+// prend pour un second polygone et le remplit.
+function trou(coins) { return anneau([...coins].reverse()); }
+
+function mettreAJourZone() {
+  if (!etat.carteChargee || !etat.infos) return;
+  const contour = anneau(etat.infos.contour);
+  const monde = anneau([[-180, -85], [180, -85], [180, 85], [-180, 85]]);
+  carte.getSource("hors-zone").setData({
+    type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [monde, trou(etat.infos.contour)] },
+  });
+  carte.getSource("contour-zone").setData({
+    type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: contour },
+  });
+  const largeur = largeurBord();
+  const interieur = largeur > 0 ? rectangleInterieur(largeur) : null;
+  const bande = largeur <= 0 ? [] : [interieur ? [contour, trou(interieur)] : [contour]];
+  carte.getSource("bord-zone").setData({
+    type: "FeatureCollection",
+    features: bande.map((anneaux) => ({
+      type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: anneaux },
+    })),
+  });
+}
+
+function mettreAJourAlerteBord() {
+  const bloc = $("alerte-bord");
+  const largeur = largeurBord();
+  if (!etat.depart || largeur <= 0) { bloc.hidden = true; return; }
+  const distance = distanceAuBord(etat.depart[0], etat.depart[1]);
+  bloc.hidden = distance >= largeur;
+  bloc.textContent =
+    `Départ à ${km(Math.max(distance, 0))} km du bord de la zone : sur ${$("distance").value} km, ` +
+    "la boucle ne pourra pas s'étendre librement de ce côté et les propositions risquent " +
+    "d'être moins riches. Rapproche le départ du centre pour de meilleures boucles.";
+}
+
+// Place le départ s'il est dans la zone ; sinon le refuse et renvoie false.
 function placerDepart(longitude, latitude, texte) {
+  if (etat.infos && distanceAuBord(longitude, latitude) < 0) {
+    afficherMessage(
+      `Ce point est en dehors de la zone couverte (${etat.infos.zone}) : ` +
+      "choisis un départ à l'intérieur du cadre.",
+    );
+    etat.messageHorsZone = true;
+    if (etat.marqueurDepart && etat.depart) etat.marqueurDepart.setLngLat(etat.depart);
+    return false;
+  }
+  if (etat.messageHorsZone) { afficherMessage(""); etat.messageHorsZone = false; }
   etat.depart = [longitude, latitude];
   if (!etat.marqueurDepart) {
     const pastille = document.createElement("div");
@@ -87,11 +192,24 @@ function placerDepart(longitude, latitude, texte) {
   $("depart-texte").textContent =
     texte || `${latitude.toFixed(4).replace(".", ",")} N, ${longitude.toFixed(4).replace(".", ",")} E`;
   $("aide-carte").hidden = true;
+  mettreAJourAlerteBord();
+  return true;
 }
 
 carte.on("click", (e) => placerDepart(e.lngLat.lng, e.lngLat.lat));
 
 carte.on("load", () => {
+  const vide = { type: "FeatureCollection", features: [] };
+  // Zone couverte : extérieur grisé, bande « bord de zone », contour.
+  carte.addSource("hors-zone", { type: "geojson", data: vide });
+  carte.addSource("bord-zone", { type: "geojson", data: vide });
+  carte.addSource("contour-zone", { type: "geojson", data: vide });
+  carte.addLayer({ id: "hors-zone", type: "fill", source: "hors-zone",
+    paint: { "fill-color": "#1f2a24", "fill-opacity": 0.38 } });
+  carte.addLayer({ id: "bord-zone", type: "fill", source: "bord-zone",
+    paint: { "fill-color": "#f5b400", "fill-opacity": 0.2 } });
+  carte.addLayer({ id: "contour-zone", type: "line", source: "contour-zone",
+    paint: { "line-color": "#1f2a24", "line-width": 2.5 } });
   carte.addSource("trace", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
   carte.addSource("autres", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
   carte.addLayer({ id: "autres", type: "line", source: "autres",
@@ -102,6 +220,8 @@ carte.on("load", () => {
   carte.addLayer({ id: "trace", type: "line", source: "trace",
     layout: { "line-cap": "round", "line-join": "round" },
     paint: { "line-color": ["get", "couleur"], "line-width": 4.5 } });
+  etat.carteChargee = true;
+  mettreAJourZone();
 });
 
 // -------------------------------------------------------------------- réglages
@@ -134,6 +254,8 @@ function synchroniserAffichage() {
   }
   $("pente-valeur").textContent = `${$("pente").value} %`;
   if (!cotes) $("bloc-pente").hidden = !$("pente-active").checked;
+  mettreAJourZone();
+  mettreAJourAlerteBord();
 }
 for (const id of ["distance", "dplus", "sentier", "sentier-actif", "pente", "pente-active", "repetitions", "intervalles-actif", "duree", "rayon"]) {
   $(id).addEventListener("input", synchroniserAffichage);
@@ -199,8 +321,9 @@ $("ma-position").addEventListener("click", () => {
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       $("ma-position").textContent = "Ma position";
-      placerDepart(pos.coords.longitude, pos.coords.latitude, "Ma position");
-      carte.flyTo({ center: etat.depart, zoom: 14 });
+      if (placerDepart(pos.coords.longitude, pos.coords.latitude, "Ma position")) {
+        carte.flyTo({ center: etat.depart, zoom: 14 });
+      }
     },
     () => {
       $("ma-position").textContent = "Ma position";
@@ -529,22 +652,31 @@ async function demarrer() {
   $("zone").textContent = etat.infos.zone;
   const allure = etat.infos.allure_defaut_s_par_km;
   $("allure").value = `${Math.floor(allure / 60)}:${String(allure % 60).padStart(2, "0")}`;
-  const [o, s, e, n] = etat.infos.emprise;
-  carte.setMaxBounds([[o - 0.05, s - 0.03], [e + 0.05, n + 0.03]]);
+  const longitudes = etat.infos.contour.map((c) => c[0]);
+  const latitudes = etat.infos.contour.map((c) => c[1]);
+  carte.setMaxBounds([
+    [Math.min(...longitudes) - 0.05, Math.min(...latitudes) - 0.03],
+    [Math.max(...longitudes) + 0.05, Math.max(...latitudes) + 0.03],
+  ]);
   const departMemorise = restaurerFormulaire();
-  if (departMemorise) {
+  // Un départ mémorisé peut être hors de la zone si la zone du site a changé.
+  const memoriseValable = departMemorise && distanceAuBord(departMemorise[0], departMemorise[1]) >= 0;
+  if (memoriseValable) {
     placerDepart(departMemorise[0], departMemorise[1]);
   } else {
     const [lat, lng] = etat.infos.depart_defaut;
     placerDepart(lng, lat, "Rue Dailly, Saint-Cloud");
   }
+  mettreAJourZone();
   // Légende des pentes.
   const legende = document.createElement("div");
   legende.className = "legende-pente";
   const bornes = [0, ...etat.infos.paliers_pente];
   legende.innerHTML = etat.infos.couleurs_pente.map((c, i) =>
     `<div><i style="background:${c}"></i>${i < bornes.length - 1 ? `${bornes[i]}–${bornes[i + 1]} %` : `> ${bornes[i]} %`}</div>`,
-  ).join("");
+  ).join("") +
+    '<div class="legende-zone"><i class="bord"></i>bord de zone</div>' +
+    '<div class="legende-zone"><i class="hors"></i>hors zone</div>';
   carte.addControl({ onAdd: () => legende, onRemove: () => legende.remove() }, "bottom-left");
 }
 

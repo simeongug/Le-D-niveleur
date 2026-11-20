@@ -139,6 +139,10 @@ select, input[type=text] {
   background: rgba(255,255,255,.92); padding: 6px 8px; border-radius: 8px; font-size: 0.72rem; line-height: 1.5;
 }
 .legende-pente i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+.legende-pente .legende-zone i { height: 10px; border-radius: 2px; }
+.legende-pente .legende-zone i.bord { background: rgba(245, 180, 0, 0.45); border: 1px solid #1f2a24; }
+.legende-pente .legende-zone i.hors { background: rgba(31, 42, 36, 0.5); }
+.alerte-bord { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: #fff4d6; color: #6b4d00; font-size: 0.82rem; line-height: 1.35; }
 
 @media (min-width: 900px) {
   .disposition { flex-direction: row-reverse; height: calc(100vh - 52px); }

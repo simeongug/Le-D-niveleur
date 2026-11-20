@@ -4,7 +4,7 @@
 
 | Donnée | Source | Licence |
 |---|---|---|
-| Chemins | Extrait Île-de-France d'OpenStreetMap, publié chaque jour par Geofabrik | ODbL — © les contributeurs d'OpenStreetMap |
+| Chemins | Extrait Île-de-France d'OpenStreetMap, publié chaque jour par Geofabrik (secours : OpenStreetMap France) | ODbL — © les contributeurs d'OpenStreetMap |
 | Altitude | IGN, RGE ALTI®, via la Géoplateforme (`data.geopf.fr`) | Licence Ouverte Etalab 2.0 |
 | Fond de la carte de contrôle | IGN, Plan IGN | Licence Ouverte Etalab 2.0 |
 
@@ -29,7 +29,7 @@ deniveleur denivele ma-sortie.gpx
 
 `data/manifeste.json` note pour chaque fichier téléchargé son adresse, sa date, sa
 taille et son empreinte. L'extrait OpenStreetMap est vérifié contre l'empreinte publiée
-par Geofabrik avant d'être utilisé. `reseau.json` rappelle de quel extrait et avec
+par sa source avant d'être utilisé. `reseau.json` rappelle de quel extrait et avec
 quels réglages le réseau a été construit.
 
 ## Ce qu'on garde d'OpenStreetMap
@@ -67,3 +67,7 @@ la boucle entière, avec le seuil.
 - La connexion sécurisée vers Geofabrik est coupée sur certains réseaux : le
   téléchargement bascule alors en connexion simple, et l'empreinte du fichier garantit
   qu'il n'a pas été altéré.
+- Si Geofabrik ne répond pas du tout (le 20/11/2026, son adresse « latest » renvoyait
+  une redirection sans fin), l'extrait est pris chez OpenStreetMap France, source de
+  secours déclarée dans `parametres.toml` (`[osm] sources`). Le manifeste note la
+  source réellement utilisée.

@@ -214,3 +214,44 @@ def test_intervalles_repetent_la_meme_cote():
 def test_intervalles_impossibles_donnent_zero_proposition():
     boucles, _ = _generer(repetitions=20)
     assert boucles == []
+
+
+def _lire_fit(contenu: bytes) -> dict[str, list[dict]]:
+    import io
+
+    import fitdecode
+
+    messages: dict[str, list[dict]] = {}
+    with fitdecode.FitReader(io.BytesIO(contenu)) as lecteur:
+        for cadre in lecteur:
+            if isinstance(cadre, fitdecode.FitDataMessage):
+                champs = {champ.name: champ.value for champ in cadre.fields}
+                messages.setdefault(cadre.name, []).append(champs)
+    return messages
+
+
+def test_fit_parcours_relisible():
+    from deniveleur import fit
+
+    boucles, _ = _generer(repetitions=3)
+    boucle = boucles[0]
+    messages = _lire_fit(fit.parcours(boucle, "Essai"))
+    assert messages["course"][0]["name"] == "Essai"
+    assert len(messages["record"]) > 50
+    assert messages["record"][-1]["distance"] == pytest.approx(boucle.distance_m, rel=0.001)
+    assert len(messages["course_point"]) == 2 * len(boucle.montees)
+    assert messages["lap"][0]["total_distance"] == pytest.approx(boucle.distance_m, rel=0.001)
+
+
+def test_fit_entrainement_decrit_les_intervalles():
+    from deniveleur import fit
+
+    boucle = _generer(repetitions=3)[0][0]
+    messages = _lire_fit(fit.entrainement(boucle, "Essai 3x"))
+    etapes = messages["workout_step"]
+    assert messages["workout"][0]["num_valid_steps"] == len(etapes) == 5
+    assert etapes[1]["duration_distance"] == pytest.approx(boucle.intervalles.montee_m, abs=1)
+    assert etapes[3]["duration_type"] == "repeat_until_steps_cmplt"
+    assert etapes[3]["duration_step"] == 1 and etapes[3]["repeat_steps"] == 3
+    with pytest.raises(ValueError):
+        fit.entrainement(boucles_essai()[0][0], "pas d'intervalles")

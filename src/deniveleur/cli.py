@@ -183,7 +183,7 @@ def mesurer_gpx(gpx: Path, zone: str, dossier: Path) -> None:
 
 
 def generer_boucles(options: argparse.Namespace) -> int:
-    from deniveleur import carte, gpx, moteur
+    from deniveleur import carte, fit, gpx, moteur
     from deniveleur.reseau import Reseau
 
     reglages = parametres.charger()
@@ -220,6 +220,11 @@ def generer_boucles(options: argparse.Namespace) -> int:
             f"{boucle.part_chemin * 100:.0f} % de chemin"
         )
         fichier = gpx.ecrire(boucle, options.sortie / f"{nom}.gpx", titre)
+        (options.sortie / f"{nom}-parcours.fit").write_bytes(fit.parcours(boucle, titre[:31]))
+        if boucle.intervalles is not None:
+            (options.sortie / f"{nom}-seance.fit").write_bytes(
+                fit.entrainement(boucle, f"Deniveleur {boucle.intervalles.repetitions}x")
+            )
         print(
             f"\nProposition {rang} : {boucle.distance_m / 1000:.1f} km, D+ {boucle.dplus_m:.0f} m"
         )

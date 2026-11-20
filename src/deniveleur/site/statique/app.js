@@ -366,9 +366,12 @@ function choisir(rang) {
     <svg id="profil" class="profil" role="img" aria-label="Profil d'altitude"></svg>
     <p id="profil-info" class="profil-info">Glisse le doigt sur le profil pour suivre la carte</p>
     <a class="bouton-gpx" href="/api/calculs/${p.idCalcul}/gpx/${p.rang}" download>Télécharger le GPX</a>
+    <a class="bouton-gpx" href="/api/calculs/${p.idCalcul}/fit/parcours/${p.rang}" download>Parcours FIT (montre)</a>
+    ${p.intervalles ? `<a class="bouton-gpx" href="/api/calculs/${p.idCalcul}/fit/entrainement/${p.rang}" download>Séance FIT (intervalles)</a>` : ""}
     <p class="astuce">Dans Strava (sur ordinateur) : « Créer un itinéraire », puis la petite flèche
-      d'import en haut à gauche de la carte. Le fichier s'importe aussi dans Garmin Connect,
-      Suunto et Coros.</p>
+      d'import en haut à gauche de la carte. Le GPX et le parcours FIT s'importent aussi dans
+      Garmin Connect et Coros. La séance FIT donne les étapes à distance fixe (échauffement,
+      montées, retour) ; son import dépend de la montre.</p>
     ${p.alertes.length ? `<ul class="alertes">${p.alertes.map((a) => `<li>${echapper(a)}</li>`).join("")}</ul>` : ""}
     <div class="montees">
       <h3>Les côtes</h3>

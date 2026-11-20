@@ -8,6 +8,8 @@ Routes :
     POST /api/calculs               lance un calcul, renvoie son identifiant
     GET  /api/calculs/{id}          état du calcul et, une fois fini, les propositions
     GET  /api/calculs/{id}/gpx/{n}  fichier GPX de la proposition n
+    GET  /api/calculs/{id}/fit/parcours/{n}      parcours FIT (montre)
+    GET  /api/calculs/{id}/fit/entrainement/{n}  séance FIT (intervalles seulement)
 """
 
 import logging
@@ -153,6 +155,24 @@ def creer_application(
         return Response(
             contenu,
             media_type="application/gpx+xml",
+            headers={"Content-Disposition": f'attachment; filename="{nom}"'},
+        )
+
+    @app.get("/api/calculs/{identifiant}/fit/{genre}/{rang}")
+    def telecharger_fit(identifiant: str, genre: str, rang: int) -> Response:
+        calcul = file().obtenir(identifiant)
+        if calcul is None or calcul.etat != "termine":
+            raise HTTPException(404, "Calcul inconnu, expiré ou pas encore terminé.")
+        if not 1 <= rang <= len(calcul.boucles):
+            raise HTTPException(404, "Proposition inconnue.")
+        if genre not in ("parcours", "entrainement"):
+            raise HTTPException(404, "Type de fichier inconnu : parcours ou entrainement.")
+        if genre == "entrainement" and calcul.boucles[rang - 1].intervalles is None:
+            raise HTTPException(404, "Pas de séance d'intervalles pour cette proposition.")
+        nom, contenu = file().fit(calcul, rang, genre)
+        return Response(
+            contenu,
+            media_type="application/octet-stream",
             headers={"Content-Disposition": f'attachment; filename="{nom}"'},
         )
 

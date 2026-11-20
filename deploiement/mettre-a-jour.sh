@@ -27,6 +27,13 @@ if [[ "$avant" != "$apres" ]]; then
   fi
 fi
 
+# Le site sert la zone par défaut : si son réseau manque, on le construit (sinon le site plante
+# en boucle au redémarrage, comme le 20 novembre 2026).
+if [[ ! -f "$DONNEES/ouest-parisien/reseau.npz" ]]; then
+  echo "Réseau de la zone par défaut absent : construction."
+  refaire_reseau=1
+fi
+
 if [[ "${1:-}" == "--donnees" ]]; then
   refaire_reseau=1
 fi

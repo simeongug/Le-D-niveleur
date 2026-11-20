@@ -87,3 +87,13 @@ def test_preferences_avancees(client):
     impossible = attendre(client, reponse.json()["id"])
     assert impossible["etat"] == "erreur"
     assert "préférences" in impossible["erreur"]
+
+
+def test_intervalles(client):
+    reponse = client.post("/api/calculs", json=demande(repetitions=3, propositions=1))
+    fini = attendre(client, reponse.json()["id"])
+    assert fini["etat"] == "termine", fini["erreur"]
+    proposition = fini["resultat"]["propositions"][0]
+    assert any("3 montées" in alerte for alerte in proposition["alertes"])
+    assert len(proposition["montees"]) >= 3
+    assert client.post("/api/calculs", json=demande(repetitions=1)).status_code == 422

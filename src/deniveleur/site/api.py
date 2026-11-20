@@ -43,6 +43,7 @@ class DemandeWeb(BaseModel):
     pente_max_pct: float | None = Field(default=None, ge=5, le=45)
     sans_bitume: bool = False
     doublons: bool = False
+    repetitions: int | None = Field(default=None, ge=2, le=20)
     propositions: int = Field(default=3, ge=1, le=3)
     allure_s_par_km: float | None = Field(default=None, ge=150, le=1200)
 
@@ -118,6 +119,7 @@ def creer_application(
                     pente_max_pct=demande.pente_max_pct,
                     sans_bitume=demande.sans_bitume,
                     doublons=demande.doublons,
+                    repetitions=demande.repetitions,
                     propositions=demande.propositions,
                     allure_s_par_km=allure,
                 )

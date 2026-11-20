@@ -44,9 +44,17 @@ automatique sur un serveur gratuit Oracle Cloud, mise à jour automatique depuis
 [deploiement.md](deploiement.md).
 **Reste à vérifier par Siméon :** l'usage depuis son téléphone une fois en ligne.
 
-## 6. Intervalles en côte
+## 6. Intervalles en côte ✅ (en partie)
 
-Insérer dans la boucle des répétitions sur une côte choisie.
+Une séance : échauffement jusqu'au pied d'une côte, N montées avec redescente par le même
+chemin, retour au départ par un autre chemin si possible. L'appli choisit la côte (la plus
+riche en D+ qui tient dans la distance demandée) ; on fixe seulement le nombre de
+répétitions. Site : « Séance d'intervalles » ; ligne de commande : `--repetitions 6`.
+**Résultat :** sur le terrain d'essai, 3 montées de 800 m donnent 5,2 km et 120 m de D+, en
+moins d'une seconde ; trop de répétitions pour la distance donnent « aucune proposition ».
+**Reste à faire :** choisir la côte soi-même en touchant la carte ; compléter un parcours
+trop court avec un détour ; export FIT (parcours + entraînement) pour la montre ; essai sur
+les vraies données.
 
 ## 7. Préférences avancées ✅ (en partie)
 

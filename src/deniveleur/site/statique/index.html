@@ -61,6 +61,19 @@
         </fieldset>
 
         <fieldset>
+          <legend>Séance d'intervalles</legend>
+          <label class="interrupteur">
+            <input type="checkbox" id="intervalles-actif">
+            <span>Monter plusieurs fois la même côte</span>
+          </label>
+          <div class="curseur-valeur" id="bloc-intervalles" hidden>
+            <input type="range" id="repetitions" min="2" max="12" step="1" value="6" aria-label="Nombre de répétitions">
+            <output id="repetitions-valeur" for="repetitions">6 ×</output>
+          </div>
+          <p class="note" id="note-intervalles" hidden>L'appli choisit la côte près du départ : échauffement, N montées et redescentes, retour. Le D+ visé et « repasser par le même chemin » sont ignorés.</p>
+        </fieldset>
+
+        <fieldset>
           <legend>Contraintes</legend>
           <label class="interrupteur">
             <input type="checkbox" id="sans-escaliers">

@@ -113,10 +113,13 @@ function synchroniserAffichage() {
   const cible = document.querySelector("input[name=objectif]:checked").value === "cible";
   $("bloc-cible").hidden = !cible;
   $("bloc-sentier").hidden = !$("sentier-actif").checked;
+  $("repetitions-valeur").textContent = `${$("repetitions").value} ×`;
+  $("bloc-intervalles").hidden = !$("intervalles-actif").checked;
+  $("note-intervalles").hidden = !$("intervalles-actif").checked;
   $("pente-valeur").textContent = `${$("pente").value} %`;
   $("bloc-pente").hidden = !$("pente-active").checked;
 }
-for (const id of ["distance", "dplus", "sentier", "sentier-actif", "pente", "pente-active"]) {
+for (const id of ["distance", "dplus", "sentier", "sentier-actif", "pente", "pente-active", "repetitions", "intervalles-actif"]) {
   $(id).addEventListener("input", synchroniserAffichage);
 }
 for (const radio of document.querySelectorAll("input[name=objectif]")) {
@@ -131,6 +134,8 @@ function lireFormulaire() {
     cible,
     dplus: Number($("dplus").value),
     sansEscaliers: $("sans-escaliers").checked,
+    intervallesActif: $("intervalles-actif").checked,
+    repetitions: Number($("repetitions").value),
     sansBitume: $("sans-bitume").checked,
     penteActive: $("pente-active").checked,
     pente: Number($("pente").value),
@@ -150,6 +155,8 @@ function restaurerFormulaire() {
   if (r.cible) document.querySelector("input[name=objectif][value=cible]").checked = true;
   if (r.dplus) $("dplus").value = r.dplus;
   $("sans-escaliers").checked = Boolean(r.sansEscaliers);
+  $("intervalles-actif").checked = Boolean(r.intervallesActif);
+  if (r.repetitions) $("repetitions").value = r.repetitions;
   $("sans-bitume").checked = Boolean(r.sansBitume);
   $("pente-active").checked = Boolean(r.penteActive);
   if (r.pente) $("pente").value = r.pente;
@@ -201,6 +208,7 @@ $("formulaire").addEventListener("submit", async (e) => {
     sans_bitume: f.sansBitume,
     pente_max_pct: f.penteActive ? f.pente : null,
     doublons: f.doublons,
+    repetitions: f.intervallesActif ? f.repetitions : null,
     propositions: f.propositions,
     allure_s_par_km: allure,
   };

@@ -13,13 +13,14 @@ import numpy as np
 
 from deniveleur import geo
 from deniveleur.moteur import graphe as module_graphe
+from deniveleur.moteur import intervalles as module_intervalles
 from deniveleur.moteur.boucle import Evaluateur
 from deniveleur.moteur.chemins import Chemins
-from deniveleur.moteur.itineraire import Boucle, Montee, assembler
+from deniveleur.moteur.itineraire import Boucle, Intervalles, Montee, assembler
 from deniveleur.moteur.recherche import Candidat, Recherche
 from deniveleur.reseau import Reseau
 
-__all__ = ["Boucle", "Montee", "Rapport", "generer"]
+__all__ = ["Boucle", "Intervalles", "Montee", "Rapport", "generer"]
 
 journal = logging.getLogger(__name__)
 
@@ -77,6 +78,7 @@ def generer(
     pente_max_pct: float | None = None,
     sans_bitume: bool = False,
     doublons: bool = False,
+    repetitions: int | None = None,
 ) -> tuple[list[Boucle], Rapport]:
     """Cherche les meilleures boucles de `distance_m` partant de (latitude, longitude).
 
@@ -105,6 +107,21 @@ def generer(
         graphe, reglages, parametres["profil"]["hysteresis_m"], parametres["profil"]["pas_m"]
     )
     chemins = Chemins(graphe, reglages)
+    if repetitions:
+        return _intervalles(
+            graphe,
+            chemins,
+            evaluateur,
+            reseau,
+            parametres,
+            reglages,
+            distance_m,
+            tolerance,
+            repetitions,
+            propositions,
+            debut,
+            (float(x[0]), float(y[0])),
+        )
     recherche = Recherche(
         graphe,
         chemins,
@@ -146,5 +163,63 @@ def generer(
         bilan.constructions,
         bilan.valides,
         f"{boucles[0].dplus_m:.0f} m" if boucles else "aucun",
+    )
+    return boucles, rapport
+
+
+def _intervalles(
+    graphe: Any,
+    chemins: Chemins,
+    evaluateur: Evaluateur,
+    reseau: Reseau,
+    parametres: dict[str, Any],
+    reglages: dict[str, Any],
+    distance_m: float,
+    tolerance: float,
+    repetitions: int,
+    propositions: int,
+    debut: float,
+    depart: tuple[float, float],
+) -> tuple[list[Boucle], Rapport]:
+    preparation = time.perf_counter() - debut
+    plans, cotes, realisables = module_intervalles.chercher(
+        graphe,
+        chemins,
+        evaluateur,
+        parametres["intervalles"],
+        distance_m,
+        tolerance,
+        repetitions,
+        propositions,
+    )
+    boucles = [
+        assembler(
+            p.arcs,
+            p.mesure,
+            graphe,
+            reseau,
+            parametres["montees"],
+            (p.repetitions, p.arcs_echauffement, p.arcs_montee, p.arcs_retour),
+        )
+        for p in plans
+    ]
+    rapport = Rapport(
+        duree_s=time.perf_counter() - debut,
+        preparation_s=preparation,
+        noeuds=graphe.nombre_noeuds,
+        ancres=len(chemins.ancres),
+        constructions=cotes,
+        abouties=realisables,
+        valides=len(plans),
+        ecart_depart_m=float(
+            np.hypot(graphe.x[graphe.depart] - depart[0], graphe.y[graphe.depart] - depart[1])
+        ),
+    )
+    journal.info(
+        "Intervalles : %.1f s, %d côtes examinées, %d plans réalisables, %d retenus",
+        rapport.duree_s,
+        cotes,
+        realisables,
+        len(plans),
     )
     return boucles, rapport

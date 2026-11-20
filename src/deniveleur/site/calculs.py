@@ -34,6 +34,7 @@ class Demande:
     pente_max_pct: float | None
     sans_bitume: bool
     doublons: bool
+    repetitions: int | None
     propositions: int
     allure_s_par_km: float
 
@@ -133,6 +134,7 @@ class FileDeCalculs:
             pente_max_pct=d.pente_max_pct,
             sans_bitume=d.sans_bitume,
             doublons=d.doublons,
+            repetitions=d.repetitions,
             dplus_cible=d.dplus_cible,
         )
         calcul.boucles = boucles

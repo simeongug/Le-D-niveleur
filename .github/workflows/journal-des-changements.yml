@@ -48,13 +48,13 @@ jobs:
           TITRE="Journal des changements"
 
           # Retrouve l'issue du journal, la crée si elle n'existe pas encore.
-          NUM=$(gh issue list --repo "$REPO" --state all --search "\"$TITRE\" in:title" \
+          # (la liste est lue directement, sans passer par l'index de recherche, parfois en retard)
+          NUM=$(gh issue list --repo "$REPO" --state all --limit 200 \
                   --json number,title --jq "map(select(.title == \"$TITRE\")) | .[0].number // empty")
           if [ -z "$NUM" ]; then
-            gh issue create --repo "$REPO" --title "$TITRE" \
-              --body "Chaque push et chaque PR est signalé ici. Cliquez sur **Subscribe** (à droite) pour être notifié. Cette issue est alimentée automatiquement." >/dev/null
-            NUM=$(gh issue list --repo "$REPO" --state all --search "\"$TITRE\" in:title" \
-                    --json number,title --jq "map(select(.title == \"$TITRE\")) | .[0].number")
+            URL=$(gh issue create --repo "$REPO" --title "$TITRE" \
+              --body "Chaque push et chaque PR est signalé ici. Cliquez sur **Subscribe** (à droite) pour être notifié. Cette issue est alimentée automatiquement.")
+            NUM="${URL##*/}"
           fi
 
           if [ "$EVENT" = "push" ]; then

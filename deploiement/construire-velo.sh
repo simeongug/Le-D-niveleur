@@ -7,18 +7,17 @@
 # Garde-fous (tout reste gratuit : rien n'est créé chez Oracle, on utilise seulement le
 # serveur existant) :
 #   - refuse de démarrer s'il manque de la place sur le disque ;
-#   - plafonne la mémoire de la construction (par défaut 7 Go sur 12) : si la zone est
+#   - plafonne la mémoire de la construction (par défaut 65 % de la mémoire du serveur) : si la zone est
 #     trop grosse, c'est la construction qui s'arrête, jamais le site ;
 #   - mesure la mémoire maximale utilisée, puis celle que prendra le site avec ce réseau ;
 #   - ne touche ni au réseau de la course à pied ni au service du site.
-# Variables : LIMITE_MEMOIRE (7G), DISQUE_MIN_GO (6), ZONE (chevreuse-velo).
+# Variables : LIMITE_MEMOIRE (65 % de la mémoire), DISQUE_MIN_GO (6), ZONE (chevreuse-velo).
 set -euo pipefail
 
 CODE=/opt/deniveleur
 DONNEES=/var/lib/deniveleur
 UTILISATEUR=deniveleur
 ZONE="${ZONE:-chevreuse-velo}"
-LIMITE_MEMOIRE="${LIMITE_MEMOIRE:-7G}"
 DISQUE_MIN_GO="${DISQUE_MIN_GO:-6}"
 DENIVELEUR="$CODE/.venv/bin/deniveleur"
 
@@ -28,6 +27,8 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 echo "--- Contrôles avant de commencer"
+# Par défaut, la construction ne peut pas dépasser 65 % de la mémoire du serveur.
+LIMITE_MEMOIRE="${LIMITE_MEMOIRE:-$(awk '/MemTotal/ {print int($2 * 0.65 / 1024)}' /proc/meminfo)M}"
 libre_go="$(df -BG --output=avail "$DONNEES" | tail -1 | tr -dc '0-9')"
 dispo_mo="$(awk '/MemAvailable/ {print int($2 / 1024)}' /proc/meminfo)"
 total_mo="$(awk '/MemTotal/ {print int($2 / 1024)}' /proc/meminfo)"
@@ -58,8 +59,8 @@ pic_mo = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
 print(f"Mémoire maximale de la construction : {pic_mo:.0f} Mo")
 PYTHON
 then
-  echo "La construction a échoué (probablement plus de mémoire que le plafond)." >&2
-  echo "Le site n'est pas touché. Réduire la zone dans parametres.toml, puis recommencer." >&2
+  echo "La construction a échoué : lire l'erreur au-dessus (« Killed » ou « MemoryError » = plafond mémoire atteint)." >&2
+  echo "Le site n'est pas touché. Si c'est la mémoire, réduire la zone dans parametres.toml." >&2
   exit 1
 fi
 

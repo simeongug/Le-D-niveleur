@@ -159,7 +159,8 @@ def test_profil_velo_route_fusionne_sans_toucher_a_la_course():
     # Ce que le profil ne redéfinit pas vient des réglages de base.
     assert velo["osm"]["acces_interdit"] == course["osm"]["acces_interdit"]
     assert velo["moteur"]["tolerance"] == course["moteur"]["tolerance"]
-    assert velo["profil"] == "velo-route"
+    assert velo["nom_profil"] == "velo-route"
+    assert velo["profil"]["pas_m"] > 0  # la section [profil] reste intacte
     with pytest.raises(KeyError):
         parametres.charger("inconnu")
 

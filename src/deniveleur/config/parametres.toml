@@ -14,11 +14,13 @@ region = "ile-de-france"
 emprise_l93 = [636000, 6852000, 648000, 6864000]
 
 [zones.chevreuse-velo]
-nom = "Ouest parisien et vallée de Chevreuse (vélo de route)"
+nom = "Vallée de Chevreuse, Versailles, Marly et Saint-Germain (vélo de route)"
 region = "ile-de-france"
 profil = "velo-route"
-# 56 km × 52 km autour de Saint-Cloud : de Rambouillet à Paris, de Chevreuse à Saint-Germain.
-emprise_l93 = [606000, 6826000, 662000, 6878000]
+# 34 km × 36 km (environ 1 200 km²) : de Paris Ouest à la vallée de Chevreuse, de
+# Saint-Germain-en-Laye à Dampierre. Trois fois plus petite que la première version, pour
+# tenir dans la mémoire du serveur gratuit (12 Go).
+emprise_l93 = [616000, 6838000, 650000, 6874000]
 
 [osm]
 # Sources de l'extrait régional, essayées dans l'ordre : si l'une ne répond pas (ou

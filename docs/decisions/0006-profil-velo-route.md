@@ -15,7 +15,7 @@ des répétitions de côte, des fichiers GPX et FIT pour le compteur ou la montr
 | Voies autorisées | sentiers, escaliers, voies piétonnes | routes, pistes cyclables ; ni sentiers, ni escaliers, ni grands axes |
 | Revêtement | tout | dur uniquement (pas de pavés ni de gravier) |
 | Droit de passage | étiquette `foot` | étiquette `bicycle` |
-| Taille de la zone | 12 km × 12 km | 56 km × 52 km (Rambouillet à Paris, Chevreuse à Saint-Germain) |
+| Taille de la zone | 12 km × 12 km | 34 km × 36 km (Chevreuse, Versailles, Marly, Saint-Germain), choisie pour tenir dans le serveur gratuit |
 | Altitude | pixels de 2 m | pixels de 10 m (l'écart suffit pour des routes) |
 | Pente maximale « plausible » | 45 % | 25 % |
 | Temps estimé | allure à plat 6:00/km, 100 m de D+ ≈ 1 km | 30 km/h à plat, 50 m de D+ ≈ 1 km |
@@ -38,7 +38,7 @@ de la course reste intact et séparé de celui du vélo.
 
 ## Risques connus
 
-La zone fait environ 2 900 km² : le réseau peut dépasser plusieurs centaines de milliers
-de tronçons. La préparation de chaque calcul (graphe autour du départ) risque d'être
+La zone fait environ 1 200 km² (la première version en faisait 2 900, trop pour 12 Go de
+mémoire) : le réseau peut encore dépasser plusieurs centaines de milliers de tronçons. La préparation de chaque calcul (graphe autour du départ) risque d'être
 longue sur le serveur gratuit ; si c'est le cas, on réduira le rayon de recherche ou on
 gardera le graphe en mémoire d'un calcul à l'autre.

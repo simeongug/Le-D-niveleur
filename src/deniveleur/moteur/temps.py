@@ -19,6 +19,12 @@ def estimer_s(
     return kilometres_effort(distance_m, dplus_m, reglages) * allure
 
 
+def formater_precis(secondes: float) -> str:
+    """4 min 05 (pour des durées courtes, à la seconde près)."""
+    minutes, secondes = divmod(round(secondes), 60)
+    return f"{minutes} min {secondes:02d}"
+
+
 def formater(secondes: float) -> str:
     """1 h 05, 45 min…"""
     minutes = round(secondes / 60)

@@ -59,4 +59,4 @@ def profil_de(identifiant: str) -> str:
     return str(zone(identifiant).get("profil", PROFIL_PAR_DEFAUT))
 
 
-ZONE_PAR_DEFAUT = "saint-cloud-meudon"
+ZONE_PAR_DEFAUT = "ouest-parisien"

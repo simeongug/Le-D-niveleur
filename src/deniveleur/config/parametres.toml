@@ -1,6 +1,12 @@
 # Paramètres du Déniveleur.
 # Tout ce qui se règle est ici : aucune valeur « magique » dans le code.
 
+[zones.ouest-parisien]
+nom = "Ouest parisien, de Meudon à Montmartre"
+region = "ile-de-france"
+# 26 km × 22 km : de Marnes-la-Coquette à la Villette, de Clamart à Gennevilliers.
+emprise_l93 = [632000, 6850000, 658000, 6872000]
+
 [zones.saint-cloud-meudon]
 nom = "Saint-Cloud / Sèvres / Meudon / Chaville / Ville-d'Avray"
 region = "ile-de-france"
@@ -207,6 +213,38 @@ denivele_min_m = 15
 replat_max_m = 6
 # Fenêtre de mesure de la pente maximale.
 fenetre_pente_m = 50
+
+[cotes]
+# Côtes pour intervalles : on cherche des montées qui durent environ le temps demandé.
+# Distance maximale (par les chemins) entre le départ et le bas de la côte.
+rayon_m = 3000
+# Nombre de côtes proposées.
+nombre = 5
+# Allure à plat pendant l'intervalle (4:30 /km), convertie en temps de montée avec la
+# même règle que pour les boucles (100 m de D+ ≈ 1 km de plat).
+allure_s_par_km = 270
+# Écart accepté entre la durée estimée et la durée demandée (0.15 = ±15 %).
+tolerance_duree = 0.15
+# Pente moyenne minimale pour qu'une montée compte comme une côte.
+pente_min_pct = 4
+# Redescente maximale tolérée au milieu de la côte (sous le point le plus haut atteint).
+replat_max_m = 4
+# Virage plus serré que cet angle = demi-tour, refusé.
+angle_virage_max_deg = 120
+# Bas de côte possibles : le point le plus bas de chaque case de cette taille.
+case_bas_m = 150
+# À chaque carrefour, nombre de continuations explorées (les plus montantes).
+branches = 3
+# Limite d'exploration par bas de côte (temps de calcul).
+chemins_explores_par_bas = 400
+# Note d'une côte = son dénivelé, moins ces pénalités (en mètres).
+penalite_descente = 3
+# Un intervalle se court mal dans des escaliers : on les évite autant que possible.
+penalite_escaliers_par_m = 0.5
+penalite_approche_par_km = 5
+penalite_ecart_duree_par_pct = 0.5
+# Deux côtes proposées ne doivent pas partager plus de cette part de leur longueur.
+recouvrement_max_part = 0.3
 
 [temps]
 # Estimation simple : chaque tranche de ce nombre de mètres de D+ compte comme un

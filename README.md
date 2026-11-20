@@ -17,7 +17,7 @@ La référence à battre est un tracé fait à la main : 25,1 km pour 579 m de D
 | Étape | Contenu | État |
 |---|---|---|
 | 1 | Cadrage : repo, vérifications automatiques, décisions d'architecture | ✅ |
-| 2 | Données : chemins OpenStreetMap + altitude IGN, secteur Saint-Cloud / Meudon | ✅ |
+| 2 | Données : chemins OpenStreetMap + altitude IGN, ouest parisien (Meudon → Montmartre) | ✅ |
 | 3 | Moteur en ligne de commande : boucle à D+ maximal, export GPX | ✅ |
 | 4 | D+ cible et estimation du temps de parcours | ✅ (sauf « temps cible ») |
 | 5 | Site web utilisable sur téléphone | ✅ (mise en ligne en cours) |
@@ -34,6 +34,17 @@ position »), on choisit la distance, **le plus de D+ possible ou un D+ visé**,
 contraintes (éviter les escaliers, part minimale de sentier). En une trentaine de
 secondes, le site propose jusqu'à trois boucles différentes, avec la carte colorée par
 la pente, le profil, les côtes, le temps estimé et le **fichier GPX à télécharger**.
+
+Second mode, **« Des côtes pour intervalles »** : on donne la durée d'une répétition
+(par exemple 4 minutes) et son allure à l'effort ; le site propose les côtes proches du
+départ qui tiennent cette durée, avec leur pente, leur profil et un GPX. (À côté, on peut
+aussi demander une séance complète : échauffement, N montées de la même côte, retour.)
+
+La zone couverte va de Meudon à Montmartre, Mont Valérien compris.
+
+| Côtes de 4 minutes depuis Saint-Cloud | Boucle de 12 km à Montmartre |
+|---|---|
+| ![Côtes pour intervalles](docs/images/site-cotes.jpg) | ![Boucle à Montmartre](docs/images/site-montmartre.jpg) |
 
 ![Le site sur téléphone](docs/images/site-telephone.jpg)
 

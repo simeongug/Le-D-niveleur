@@ -8,9 +8,16 @@ region = "ile-de-france"
 emprise_l93 = [636000, 6852000, 648000, 6864000]
 
 [osm]
-# Geofabrik publie un extrait par jour ; « latest » est résolu vers la version datée.
-url_base = "https://download.geofabrik.de/europe/france"
-fichier = "ile-de-france-latest.osm.pbf"
+# Sources de l'extrait régional, essayées dans l'ordre : si l'une ne répond pas (ou
+# renvoie un fichier dont l'empreinte ne correspond pas), on passe à la suivante.
+# Chaque source publie à côté du fichier son empreinte MD5 (`<fichier>.md5`).
+# Geofabrik : un extrait par jour ; « latest » est résolu vers la version datée.
+# OpenStreetMap France : même découpage, sert de secours (Geofabrik a renvoyé une
+# redirection sans fin le 20/11/2026).
+sources = [
+  { nom = "Geofabrik", url_base = "https://download.geofabrik.de/europe/france", fichier = "ile-de-france-latest.osm.pbf" },
+  { nom = "OpenStreetMap France", url_base = "https://download.openstreetmap.fr/extracts/europe/france", fichier = "ile_de_france.osm.pbf" },
+]
 # Types de voies gardés (tag OSM « highway »).
 voies = [
   "path", "footway", "track", "steps", "pedestrian", "bridleway", "cycleway",

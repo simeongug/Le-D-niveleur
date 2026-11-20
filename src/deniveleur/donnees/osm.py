@@ -42,8 +42,23 @@ class Voie:
 
 
 def telecharger_extrait(parametres: dict[str, Any], dossier: Path) -> Path:
-    """Télécharge le dernier extrait régional, vérifie son empreinte, note sa version."""
-    base, nom = parametres["url_base"], parametres["fichier"]
+    """Télécharge le dernier extrait régional depuis la première source qui répond.
+
+    Les sources sont essayées dans l'ordre de `parametres["sources"]` ; une source qui
+    ne répond pas ou dont le fichier a une empreinte incorrecte est sautée.
+    """
+    erreurs = []
+    for source in parametres["sources"]:
+        try:
+            return _telecharger_depuis(source["url_base"], source["fichier"], dossier)
+        except (ConnectionError, ValueError) as erreur:
+            journal.warning("Source %s indisponible : %s", source["nom"], erreur)
+            erreurs.append(f"{source['nom']} : {erreur}")
+    raise ConnectionError("Aucune source OSM disponible.\n" + "\n".join(erreurs))
+
+
+def _telecharger_depuis(base: str, nom: str, dossier: Path) -> Path:
+    """Télécharge l'extrait `base/nom`, vérifie son empreinte, note sa version."""
     md5_publie = tele.lire(f"{base}/{nom}.md5").decode().split()[0]
     manifeste = tele.lire_manifeste(dossier)
     connu = manifeste.get("osm", {})

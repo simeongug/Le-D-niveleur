@@ -87,3 +87,64 @@ def test_lire_gpx(tmp_path):
     longitudes, latitudes = trace.lire_gpx(fichier)
     assert list(longitudes) == [2.22, 2.23]
     assert list(latitudes) == [48.84, 48.85]
+
+
+def _faux_reseau(monkeypatch, contenu: bytes, en_panne: str) -> list[str]:
+    """Remplace le réseau : les adresses contenant `en_panne` ne répondent pas."""
+    import hashlib
+    import urllib.error
+
+    demandes: list[str] = []
+
+    def repondre(url: str) -> None:
+        demandes.append(url)
+        if en_panne in url:
+            raise ConnectionError(f"Téléchargement impossible : {url}")
+
+    def lire(url: str) -> bytes:
+        repondre(url)
+        return f"{hashlib.md5(contenu).hexdigest()}  extrait.osm.pbf\n".encode()
+
+    def telecharger(url: str, destination):
+        repondre(url)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(contenu)
+        return url
+
+    def ouvrir(url: str, suivre_redirections: bool = True):
+        raise urllib.error.URLError("pas de redirection")
+
+    monkeypatch.setattr(telechargement, "lire", lire)
+    monkeypatch.setattr(telechargement, "telecharger", telecharger)
+    monkeypatch.setattr(telechargement, "ouvrir", ouvrir)
+    return demandes
+
+
+SOURCES_ESSAI = {
+    "sources": [
+        {"nom": "Principale", "url_base": "https://principale.test/fr", "fichier": "a.osm.pbf"},
+        {"nom": "Secours", "url_base": "https://secours.test/fr", "fichier": "b.osm.pbf"},
+    ]
+}
+
+
+def test_extrait_osm_bascule_sur_la_source_de_secours(monkeypatch, tmp_path):
+    demandes = _faux_reseau(monkeypatch, b"donnees osm", en_panne="principale.test")
+    fichier = osm.telecharger_extrait(SOURCES_ESSAI, tmp_path)
+    assert fichier == tmp_path / "b.osm.pbf"
+    assert fichier.read_bytes() == b"donnees osm"
+    manifeste = telechargement.lire_manifeste(tmp_path)
+    assert manifeste["osm"]["source"] == "https://secours.test/fr/b.osm.pbf"
+    assert demandes[0].startswith("https://principale.test")
+
+
+def test_extrait_osm_aucune_source_disponible(monkeypatch, tmp_path):
+    _faux_reseau(monkeypatch, b"donnees osm", en_panne=".test")
+    with pytest.raises(ConnectionError, match="Principale.*\n.*Secours"):
+        osm.telecharger_extrait(SOURCES_ESSAI, tmp_path)
+
+
+def test_sources_osm_configurees():
+    noms = [source["nom"] for source in OSM["sources"]]
+    assert noms[0] == "Geofabrik"
+    assert len(noms) >= 2

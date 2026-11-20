@@ -18,7 +18,7 @@ from numpy.typing import NDArray
 
 from deniveleur import profil
 from deniveleur.donnees.altitude import ModeleAltitude
-from deniveleur.donnees.osm import Voie
+from deniveleur.donnees.osm import Voie, sans_revetement
 
 journal = logging.getLogger(__name__)
 
@@ -107,10 +107,7 @@ def est_chemin(etiquettes: dict[str, str], parametres_osm: dict[str, Any]) -> bo
     """Vrai pour un sentier ou une piste ; faux pour du bitume, des pavés, un escalier."""
     if etiquettes.get("highway") == "steps":
         return False
-    surface = etiquettes.get("surface")
-    if surface:
-        return surface not in parametres_osm["surfaces_dures"]
-    return etiquettes.get("highway") in parametres_osm["voies_chemin"]
+    return sans_revetement(etiquettes, parametres_osm)
 
 
 def est_ouvrage(etiquettes: dict[str, str]) -> bool:

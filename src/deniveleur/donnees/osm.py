@@ -21,6 +21,7 @@ ETIQUETTES_GARDEES = (
     "surface",
     "access",
     "foot",
+    "bicycle",
     "bridge",
     "tunnel",
     "sac_scale",
@@ -106,15 +107,25 @@ def _nom_date(base: str, nom: str) -> str:
     return nom
 
 
+def sans_revetement(etiquettes: dict[str, str], parametres: dict[str, Any]) -> bool:
+    """Vrai pour une voie dont le revêtement n'est pas dur (terre, gravier, sable…)."""
+    surface = etiquettes.get("surface")
+    if surface:
+        return surface not in parametres["surfaces_dures"]
+    return etiquettes.get("highway") in parametres["voies_chemin"]
+
+
 def voie_autorisee(etiquettes: dict[str, str], parametres: dict[str, Any]) -> bool:
-    """Vrai si un piéton a le droit d'emprunter cette voie."""
+    """Vrai si on a le droit d'emprunter cette voie (à pied ou à vélo, selon le profil)."""
     if etiquettes.get("highway") not in parametres["voies"]:
         return False
-    interdit = parametres["acces_interdit"]
-    pied = etiquettes.get("foot")
-    if pied in interdit:
+    if parametres.get("revetement_obligatoire") and sans_revetement(etiquettes, parametres):
         return False
-    if pied in PIETON_AUTORISE:
+    interdit = parametres["acces_interdit"]
+    mode = etiquettes.get(parametres.get("mode_acces", "foot"))
+    if mode in interdit:
+        return False
+    if mode in PIETON_AUTORISE:
         return True
     if etiquettes.get("access") in interdit:
         return False

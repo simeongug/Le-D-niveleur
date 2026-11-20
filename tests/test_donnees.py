@@ -148,3 +148,49 @@ def test_sources_osm_configurees():
     noms = [source["nom"] for source in OSM["sources"]]
     assert noms[0] == "Geofabrik"
     assert len(noms) >= 2
+
+
+def test_profil_velo_route_fusionne_sans_toucher_a_la_course():
+    course = parametres.charger()
+    velo = parametres.charger("velo-route")
+    assert course["osm"]["mode_acces"] == "foot" and "steps" in course["osm"]["voies"]
+    assert velo["osm"]["mode_acces"] == "bicycle" and "steps" not in velo["osm"]["voies"]
+    assert velo["moteur"]["liaison_max_m"] > course["moteur"]["liaison_max_m"]
+    # Ce que le profil ne redéfinit pas vient des réglages de base.
+    assert velo["osm"]["acces_interdit"] == course["osm"]["acces_interdit"]
+    assert velo["moteur"]["tolerance"] == course["moteur"]["tolerance"]
+    assert velo["profil"] == "velo-route"
+    with pytest.raises(KeyError):
+        parametres.charger("inconnu")
+
+
+def test_zone_velo_a_son_profil_et_une_emprise_en_dalles():
+    assert parametres.profil_de("chevreuse-velo") == "velo-route"
+    assert parametres.profil_de("saint-cloud-meudon") == "course"
+    ouest, sud, est, nord = parametres.zone("chevreuse-velo")["emprise_l93"]
+    dalle = parametres.charger("velo-route")["altitude"]["taille_dalle_m"]
+    assert all(v % dalle == 0 for v in (ouest, sud, est, nord))
+
+
+def test_voies_autorisees_a_velo():
+    velo = parametres.charger("velo-route")["osm"]
+    course = parametres.charger()["osm"]
+
+    def ok(parametres_osm, **etiquettes):
+        return osm.voie_autorisee(etiquettes, parametres_osm)
+
+    assert ok(velo, highway="residential", surface="asphalt")
+    assert ok(velo, highway="residential")  # surface inconnue : on suppose du bitume
+    assert ok(velo, highway="cycleway")
+    assert not ok(velo, highway="footway") and not ok(velo, highway="steps")
+    assert not ok(velo, highway="path", bicycle="designated")  # pas de sentier à vélo de route
+    assert not ok(velo, highway="primary")  # grands axes écartés
+    assert not ok(velo, highway="residential", surface="gravel")
+    assert not ok(velo, highway="residential", surface="sett")  # pavés
+    assert not ok(velo, highway="track")  # piste sans revêtement connu
+    assert not ok(velo, highway="residential", bicycle="no")
+    assert ok(velo, highway="residential", bicycle="designated", access="no")
+    # La course à pied n'a pas changé.
+    assert ok(course, highway="footway") and ok(course, highway="path")
+    assert ok(course, highway="residential", bicycle="no")
+    assert not ok(course, highway="residential", foot="no")

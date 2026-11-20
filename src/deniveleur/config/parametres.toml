@@ -7,6 +7,13 @@ region = "ile-de-france"
 # Emprise en Lambert-93 (mètres) : ouest, sud, est, nord. Multiples de la taille des dalles.
 emprise_l93 = [636000, 6852000, 648000, 6864000]
 
+[zones.chevreuse-velo]
+nom = "Ouest parisien et vallée de Chevreuse (vélo de route)"
+region = "ile-de-france"
+profil = "velo-route"
+# 56 km × 52 km autour de Saint-Cloud : de Rambouillet à Paris, de Chevreuse à Saint-Germain.
+emprise_l93 = [606000, 6826000, 662000, 6878000]
+
 [osm]
 # Sources de l'extrait régional, essayées dans l'ordre : si l'une ne répond pas (ou
 # renvoie un fichier dont l'empreinte ne correspond pas), on passe à la suivante.
@@ -24,7 +31,11 @@ voies = [
   "living_street", "residential", "service", "unclassified", "tertiary",
   "secondary", "primary", "tertiary_link", "secondary_link", "primary_link",
 ]
-# Valeurs qui interdisent le passage à pied.
+# Étiquette qui dit qui peut passer : « foot » (à pied) ou « bicycle » (à vélo).
+mode_acces = "foot"
+# Vrai = on écarte les voies sans revêtement dur (vélo de route).
+revetement_obligatoire = false
+# Valeurs qui interdisent le passage.
 acces_interdit = ["private", "no", "customers", "delivery", "military", "permit"]
 # Types de voies considérés comme du chemin (par opposition au bitume) quand la
 # surface n'est pas renseignée.
@@ -217,3 +228,57 @@ calculs_gardes = 200
 pas_trace_m = 20
 # Point de départ proposé à l'ouverture : rue Dailly, Saint-Cloud.
 depart_defaut = [48.8428, 2.2215]
+
+# ----------------------------------------------------------------------------
+# Profils : ne redisent que ce qui change par rapport aux réglages de base.
+# ----------------------------------------------------------------------------
+
+[profils.velo-route.osm]
+mode_acces = "bicycle"
+revetement_obligatoire = true
+# Pas de sentiers, d'escaliers ni de voies piétonnes ; pas de grands axes (primary).
+voies = [
+  "cycleway", "living_street", "residential", "service", "unclassified",
+  "tertiary", "secondary", "tertiary_link", "secondary_link", "track",
+]
+voies_chemin = ["track"]
+# Revêtements acceptés : pas de pavés.
+surfaces_dures = [
+  "asphalt", "paved", "concrete", "concrete:plates", "concrete:lanes",
+  "paving_stones", "metal",
+]
+
+[profils.velo-route.altitude]
+# 10 m suffit pour des routes et divise le volume par 25 sur une zone de 3 000 km².
+resolution_m = 10
+
+[profils.velo-route.moteur]
+budget_s = 60
+pente_max_plausible_pct = 25
+escaliers = false
+# Sorties de 50 à 80 km : tout est plus grand que pour une course de 20 km.
+rayon_max_part = 0.3
+ecart_depart_max_m = 500
+double_ecart_min_m = 300
+croisement_max_m = 150
+ancre_case_m = 500
+ancre_relief_min_m = 15
+liaison_min_m = 500
+liaison_max_m = 6000
+marge_retour_m = 800
+
+[profils.velo-route.temps]
+# 30 km/h à plat ; 50 m de D+ comptent comme 1 km de plat (estimation grossière).
+allure_plat_s_par_km = 120
+dplus_par_km_effort_m = 50
+
+[profils.velo-route.intervalles]
+longueur_min_m = 300
+longueur_max_m = 3000
+denivele_min_m = 30
+pente_moyenne_min_pct = 3
+pente_moyenne_max_pct = 15
+distance_min_entre_cotes_m = 400
+
+[profils.velo-route.site]
+budget_s = 60

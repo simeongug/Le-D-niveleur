@@ -75,3 +75,15 @@ def test_demandes_refusees(client):
     loin = {"latitude": 0.0, "longitude": 0.0, "distance_km": 5}
     assert client.post("/api/calculs", json=loin).status_code == 422
     assert client.get("/api/calculs/inconnu").status_code == 404
+
+
+def test_preferences_avancees(client):
+    corps = demande(pente_max_pct=30, doublons=True, propositions=1)
+    fini = attendre(client, client.post("/api/calculs", json=corps).json()["id"])
+    assert fini["etat"] == "termine", fini["erreur"]
+    assert client.post("/api/calculs", json=demande(pente_max_pct=2)).status_code == 422
+    # Sur ce terrain, seules les rues est-ouest sont des sentiers : le calcul échoue proprement.
+    reponse = client.post("/api/calculs", json=demande(sans_bitume=True))
+    impossible = attendre(client, reponse.json()["id"])
+    assert impossible["etat"] == "erreur"
+    assert "préférences" in impossible["erreur"]

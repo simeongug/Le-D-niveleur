@@ -111,6 +111,7 @@ class Recherche:
         self.r = reglages
         self.distance = distance_m
         self.chemin_min = chemin_min
+        self.doublons = bool(reglages.get("doublons", False))
         self.dplus_cible = dplus_cible
         # Si une part minimale de chemin est demandée, chaque mètre de chemin rapporte un peu.
         self.prime_chemin = reglages["prime_chemin_par_m"] if chemin_min > 0 else 0.0
@@ -142,8 +143,9 @@ class Recherche:
             # D+ cible : on veut l'écart le plus petit ; à écart égal, plus de sentier.
             part_chemin = mesure.chemin_m / max(mesure.longueur_m, 1.0)
             note = -abs(mesure.dplus_m - self.dplus_cible) + r["cible_bonus_chemin_m"] * part_chemin
-        note -= r["penalite_double_par_m"] * mesure.double_m
-        note -= r["penalite_double_exact_par_m"] * mesure.double_exact_m
+        if not self.doublons:
+            note -= r["penalite_double_par_m"] * mesure.double_m
+            note -= r["penalite_double_exact_par_m"] * mesure.double_exact_m
         note -= r["penalite_demi_tour_m"] * mesure.demi_tours
         if mesure.longueur_m > self.l_max:
             note -= r["penalite_trop_long_par_m"] * (mesure.longueur_m - self.l_max)
@@ -153,11 +155,14 @@ class Recherche:
 
     def valide_hors_chemin(self, mesure: Mesure) -> bool:
         """Bonne longueur, aucun tronçon pris deux fois, aucun demi-tour."""
+        sans_doublon = self.doublons or (
+            mesure.double_exact_m == 0
+            and mesure.double_m <= self.r["double_tolere_part"] * self.distance
+        )
         return (
             self.l_min <= mesure.longueur_m <= self.l_max
-            and mesure.double_exact_m == 0
-            and mesure.demi_tours == 0
-            and mesure.double_m <= self.r["double_tolere_part"] * self.distance
+            and sans_doublon
+            and (mesure.demi_tours == 0)
         )
 
     def valide(self, mesure: Mesure) -> bool:
@@ -219,6 +224,8 @@ class Recherche:
             cosinus = float((self.g.cap_fin[dernier] * self.g.cap_debut[reste[0]]).sum())
             if cosinus < self.c.cos_demi_tour:
                 return None
+        if self.doublons:
+            return recul, reste
         pris, occupees = occupation.pris, occupation.cases
         recouvrement = 0
         for arc in reste:
@@ -427,10 +434,12 @@ class Recherche:
             cles = np.concatenate([de * nombre + vers, vers * nombre + de])
             poids[np.searchsorted(self._positions, cles)] *= facteur
 
-        alourdir(self._troncons_proches(occupation.cases), r["retour_penalite_proche"])
-        alourdir(
-            np.fromiter(occupation.pris, np.int64, len(occupation.pris)), r["retour_penalite_pris"]
-        )
+        if not self.doublons:
+            alourdir(self._troncons_proches(occupation.cases), r["retour_penalite_proche"])
+            alourdir(
+                np.fromiter(occupation.pris, np.int64, len(occupation.pris)),
+                r["retour_penalite_pris"],
+            )
         penalisee = csr_matrix((poids, matrice.indices, matrice.indptr), shape=matrice.shape)
         distances, precedent = dijkstra(
             penalisee, directed=False, indices=noeud, return_predecessors=True, limit=longueur_max

@@ -113,8 +113,10 @@ function synchroniserAffichage() {
   const cible = document.querySelector("input[name=objectif]:checked").value === "cible";
   $("bloc-cible").hidden = !cible;
   $("bloc-sentier").hidden = !$("sentier-actif").checked;
+  $("pente-valeur").textContent = `${$("pente").value} %`;
+  $("bloc-pente").hidden = !$("pente-active").checked;
 }
-for (const id of ["distance", "dplus", "sentier", "sentier-actif"]) {
+for (const id of ["distance", "dplus", "sentier", "sentier-actif", "pente", "pente-active"]) {
   $(id).addEventListener("input", synchroniserAffichage);
 }
 for (const radio of document.querySelectorAll("input[name=objectif]")) {
@@ -129,6 +131,10 @@ function lireFormulaire() {
     cible,
     dplus: Number($("dplus").value),
     sansEscaliers: $("sans-escaliers").checked,
+    sansBitume: $("sans-bitume").checked,
+    penteActive: $("pente-active").checked,
+    pente: Number($("pente").value),
+    doublons: $("doublons").checked,
     sentierActif: $("sentier-actif").checked,
     sentier: Number($("sentier").value),
     allure: $("allure").value,
@@ -144,6 +150,10 @@ function restaurerFormulaire() {
   if (r.cible) document.querySelector("input[name=objectif][value=cible]").checked = true;
   if (r.dplus) $("dplus").value = r.dplus;
   $("sans-escaliers").checked = Boolean(r.sansEscaliers);
+  $("sans-bitume").checked = Boolean(r.sansBitume);
+  $("pente-active").checked = Boolean(r.penteActive);
+  if (r.pente) $("pente").value = r.pente;
+  $("doublons").checked = Boolean(r.doublons);
   $("sentier-actif").checked = Boolean(r.sentierActif);
   if (r.sentier) $("sentier").value = r.sentier;
   if (r.allure) $("allure").value = r.allure;
@@ -188,6 +198,9 @@ $("formulaire").addEventListener("submit", async (e) => {
     dplus_cible: f.cible ? f.dplus : null,
     chemin_min_pct: f.sentierActif ? f.sentier : 0,
     sans_escaliers: f.sansEscaliers,
+    sans_bitume: f.sansBitume,
+    pente_max_pct: f.penteActive ? f.pente : null,
+    doublons: f.doublons,
     propositions: f.propositions,
     allure_s_par_km: allure,
   };

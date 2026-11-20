@@ -94,7 +94,13 @@ def construire(
     nombre = len(reseau.noeud_x)
     dep, arr = reseau.depart, reseau.arrivee
     garde = dep != arr
-    garde &= reseau.escalier | (reseau.pente_max <= reglages["pente_max_plausible_pct"])
+    # Pente maximale choisie par la personne (jamais au-delà de la limite « plausible »).
+    pente_limite = min(
+        reglages["pente_max_plausible_pct"], reglages.get("pente_max_pct") or float("inf")
+    )
+    garde &= reseau.escalier | (reseau.pente_max <= pente_limite)
+    if reglages.get("sans_bitume", False):
+        garde &= reseau.chemin | reseau.escalier
     if not reglages["escaliers"]:
         garde &= ~reseau.escalier
     garde = sans_culs_de_sac(dep, arr, garde, nombre)
@@ -108,7 +114,8 @@ def construire(
     origine = int(np.argmin(ecart))
     if ecart[origine] > reglages["ecart_depart_max_m"]:
         raise ValueError(
-            f"Aucun chemin utilisable à moins de {reglages['ecart_depart_max_m']} m du départ."
+            f"Aucun chemin utilisable à moins de {reglages['ecart_depart_max_m']} m du départ"
+            " avec ces préférences (essayer de les assouplir)."
         )
 
     # On ne garde que ce qui est assez proche pour tenir dans la boucle.

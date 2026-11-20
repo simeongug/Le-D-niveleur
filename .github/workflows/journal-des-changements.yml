@@ -1,0 +1,78 @@
+name: Journal des changements
+
+# À chaque push (sur n'importe quelle branche) et à chaque événement de PR,
+# on ajoute un commentaire dans l'issue « Journal des changements ».
+# Les personnes abonnées à cette issue (bouton « Subscribe ») reçoivent la
+# notification GitHub (appli mobile ou email), gratuitement.
+#
+# Option : définir la variable de dépôt NOTIFY_USERS (ex. « pseudo1 pseudo2 »)
+# pour mentionner explicitement ces personnes dans chaque commentaire.
+
+on:
+  push:
+  pull_request:
+    types: [opened, reopened, ready_for_review, closed]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: journal-des-changements
+  cancel-in-progress: false
+
+jobs:
+  journal:
+    name: Prévenir l'équipe
+    runs-on: ubuntu-latest
+    # Évite les boucles et les pushes sans commit (suppression de branche).
+    if: github.actor != 'github-actions[bot]' && (github.event_name != 'push' || github.event.deleted == false)
+    steps:
+      - name: Écrire dans le journal
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          REF_NAME: ${{ github.ref_name }}
+          COMPARE_URL: ${{ github.event.compare }}
+          PUSH_COMMITS: ${{ toJSON(github.event.commits) }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_ACTION: ${{ github.event.action }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          NOTIFY_USERS: ${{ vars.NOTIFY_USERS }}
+        run: |
+          set -euo pipefail
+          TITRE="Journal des changements"
+
+          # Retrouve l'issue du journal, la crée si elle n'existe pas encore.
+          NUM=$(gh issue list --repo "$REPO" --state all --search "\"$TITRE\" in:title" \
+                  --json number,title --jq "map(select(.title == \"$TITRE\")) | .[0].number // empty")
+          if [ -z "$NUM" ]; then
+            gh issue create --repo "$REPO" --title "$TITRE" \
+              --body "Chaque push et chaque PR est signalé ici. Cliquez sur **Subscribe** (à droite) pour être notifié. Cette issue est alimentée automatiquement." >/dev/null
+            NUM=$(gh issue list --repo "$REPO" --state all --search "\"$TITRE\" in:title" \
+                    --json number,title --jq "map(select(.title == \"$TITRE\")) | .[0].number")
+          fi
+
+          if [ "$EVENT" = "push" ]; then
+            N=$(printf '%s' "$PUSH_COMMITS" | jq 'length')
+            LISTE=$(printf '%s' "$PUSH_COMMITS" | jq -r '.[:10][] | "- " + (.message | split("\n")[0])')
+            MSG="**$ACTOR** a poussé $N commit(s) sur \`$REF_NAME\` — [voir les changements]($COMPARE_URL)"$'\n\n'"$LISTE"
+          else
+            if [ "$PR_ACTION" = "closed" ] && [ "$PR_MERGED" = "true" ]; then ETAT="fusionnée"
+            elif [ "$PR_ACTION" = "closed" ]; then ETAT="fermée"
+            elif [ "$PR_ACTION" = "reopened" ]; then ETAT="rouverte"
+            else ETAT="ouverte"; fi
+            MSG="**$ACTOR** : PR #$PR_NUMBER $ETAT — [$PR_TITLE]($PR_URL)"
+          fi
+
+          if [ -n "${NOTIFY_USERS:-}" ]; then
+            MENTIONS=""
+            for u in $NOTIFY_USERS; do MENTIONS="$MENTIONS @$u"; done
+            MSG="$MSG"$'\n\n'"cc$MENTIONS"
+          fi
+
+          gh issue comment "$NUM" --repo "$REPO" --body "$MSG"

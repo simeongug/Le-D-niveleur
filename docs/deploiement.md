@@ -54,6 +54,16 @@ IP publique 152.67.12.34  →  https://152-67-12-34.sslip.io
 permet d'avoir un vrai `https` (et donc le bouton « Ma position » sur téléphone) sans
 acheter de nom de domaine.
 
+## Préparer le vélo de route sans risque pour le site
+
+La zone `chevreuse-velo` est plus grosse que celle de la course à pied. Avant de l'ouvrir sur le site, on mesure ce qu'elle coûte, sur le serveur existant (rien n'est créé, rien n'est payant) :
+
+```
+sudo bash /opt/deniveleur/deploiement/construire-velo.sh
+```
+
+Le script refuse de démarrer s'il manque de la place sur le disque, plafonne la mémoire de la construction (7 Go sur 12 par défaut, réglable avec `LIMITE_MEMOIRE`) pour qu'un dépassement arrête la construction et jamais le site, puis affiche la mémoire maximale de la construction, la mémoire que prendra le site avec ce réseau, et la taille sur le disque. Il ne touche ni au réseau de la course à pied ni au service. À lancer à un moment calme, sans l'avoir testé sur Oracle : si une ligne d'erreur apparaît, la transmettre telle quelle.
+
 ## En cas de problème
 
 Se connecter au serveur (bouton « Cloud Shell » ou SSH avec la clé), puis :

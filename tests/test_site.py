@@ -110,3 +110,15 @@ def test_telechargement_fit(client):
     simple = attendre(client, client.post("/api/calculs", json=demande()).json()["id"])
     assert client.get(f"/api/calculs/{simple['id']}/fit/entrainement/1").status_code == 404
     assert client.get(f"/api/calculs/{simple['id']}/fit/parcours/1").status_code == 200
+
+
+def test_cotes_pour_intervalles(client):
+    corps = demande(type="cotes", duree_intervalle_s=90, allure_s_par_km=270)
+    reponse = client.post("/api/calculs", json=corps)
+    fini = attendre(client, reponse.json()["id"])
+    assert fini["etat"] == "termine", fini["erreur"]
+    cotes = fini["resultat"]["propositions"]
+    assert cotes and cotes[0]["type"] == "cote"
+    assert 70 <= cotes[0]["temps_s"] <= 110
+    gpx = client.get(f"/api/calculs/{fini['id']}/gpx/1")
+    assert gpx.status_code == 200 and "cote" in gpx.headers["content-disposition"]

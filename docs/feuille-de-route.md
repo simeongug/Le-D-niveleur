@@ -11,8 +11,8 @@ Repo, README, vérifications automatiques, trois décisions d'architecture.
 
 Télécharger les chemins OpenStreetMap et l'altitude IGN (RGE ALTI), puis les assembler
 en un réseau de chemins où chaque tronçon connaît sa longueur, sa montée et sa descente.
-Fait pour le secteur Saint-Cloud / Sèvres / Meudon / Chaville / Ville-d'Avray ; le
-reste de l'Île-de-France viendra à l'étape 8.
+Fait pour l'ouest parisien (de Meudon à Montmartre, Mont Valérien compris) ; le reste
+de l'Île-de-France viendra à l'étape 8.
 **Résultat :** la commande `deniveleur donnees tout`, une carte des chemins colorés par
 la pente, et un D+ comparé à Strava sur quatre sorties (+2 % au total, voir
 [validation-denivele.md](validation-denivele.md)).
@@ -52,7 +52,8 @@ riche en D+ qui tient dans la distance demandée) ; on fixe seulement le nombre 
 répétitions. Site : « Séance d'intervalles » ; ligne de commande : `--repetitions 6`.
 **Résultat :** sur le terrain d'essai, 3 montées de 800 m donnent 5,2 km et 120 m de D+, en
 moins d'une seconde ; trop de répétitions pour la distance donnent « aucune proposition ».
-**Reste à faire :** choisir la côte soi-même en touchant la carte ; compléter un parcours
+**Aussi :** le mode « Des côtes pour intervalles » (durée d'une répétition → côtes proches qui la tiennent, voir [algorithme.md](algorithme.md)).
+**Reste à faire :** compléter un parcours
 trop court avec un détour ; export FIT (parcours + entraînement) pour la montre ; essai sur
 les vraies données.
 

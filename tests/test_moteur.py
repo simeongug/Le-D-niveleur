@@ -255,3 +255,19 @@ def test_fit_entrainement_decrit_les_intervalles():
     assert etapes[3]["duration_step"] == 1 and etapes[3]["repeat_steps"] == 3
     with pytest.raises(ValueError):
         fit.entrainement(boucles_essai()[0][0], "pas d'intervalles")
+
+
+def test_cotes_pour_intervalles():
+    from deniveleur.moteur import cotes
+
+    latitude, longitude = depart_gps()
+    # 1 min 30 à 4:30 /km : de l'ordre de 300 m de côte sur le terrain d'essai.
+    trouvees = cotes.chercher(
+        reseau_essai(), PARAMETRES, latitude, longitude, 90, allure_s_par_km=270
+    )
+    assert trouvees
+    for cote in trouvees:
+        assert 90 * 0.85 <= cote.duree_s <= 90 * 1.15 + 5
+        assert cote.pente_moyenne_pct >= PARAMETRES["cotes"]["pente_min_pct"] - 0.5
+        assert cote.trace.altitudes[-1] > cote.trace.altitudes[0]
+        assert cote.approche_m <= PARAMETRES["cotes"]["rayon_m"]

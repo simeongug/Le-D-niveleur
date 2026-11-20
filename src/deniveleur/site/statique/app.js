@@ -106,29 +106,49 @@ carte.on("load", () => {
 
 // -------------------------------------------------------------------- réglages
 
+function choixCoche(nom) {
+  return document.querySelector(`input[name=${nom}]:checked`).value;
+}
+function cocher(nom, valeur) {
+  const radio = document.querySelector(`input[name=${nom}][value="${valeur}"]`);
+  if (radio) radio.checked = true;
+}
+
 function synchroniserAffichage() {
+  $("duree-valeur").textContent = `${String($("duree").value).replace(".", ",")} min`;
+  $("rayon-valeur").textContent = `${String($("rayon").value).replace(".", ",")} km`;
+  const cotes = choixCoche("mode") === "cotes";
+  document.querySelectorAll(".mode-boucle").forEach((el) => { el.hidden = cotes; });
+  document.querySelectorAll(".mode-cotes").forEach((el) => { el.hidden = !cotes; });
+  $("generer").textContent = cotes ? "Trouver des côtes" : "Trouver mes boucles";
   $("distance-valeur").textContent = `${$("distance").value} km`;
   $("dplus-valeur").textContent = `${$("dplus").value} m`;
   $("sentier-valeur").textContent = `${$("sentier").value} %`;
   const cible = document.querySelector("input[name=objectif]:checked").value === "cible";
   $("bloc-cible").hidden = !cible;
-  $("bloc-sentier").hidden = !$("sentier-actif").checked;
+  if (!cotes) $("bloc-sentier").hidden = !$("sentier-actif").checked;
   $("repetitions-valeur").textContent = `${$("repetitions").value} ×`;
-  $("bloc-intervalles").hidden = !$("intervalles-actif").checked;
-  $("note-intervalles").hidden = !$("intervalles-actif").checked;
+  if (!cotes) {
+    $("bloc-intervalles").hidden = !$("intervalles-actif").checked;
+    $("note-intervalles").hidden = !$("intervalles-actif").checked;
+  }
   $("pente-valeur").textContent = `${$("pente").value} %`;
-  $("bloc-pente").hidden = !$("pente-active").checked;
+  if (!cotes) $("bloc-pente").hidden = !$("pente-active").checked;
 }
-for (const id of ["distance", "dplus", "sentier", "sentier-actif", "pente", "pente-active", "repetitions", "intervalles-actif"]) {
+for (const id of ["distance", "dplus", "sentier", "sentier-actif", "pente", "pente-active", "repetitions", "intervalles-actif", "duree", "rayon"]) {
   $(id).addEventListener("input", synchroniserAffichage);
 }
-for (const radio of document.querySelectorAll("input[name=objectif]")) {
+for (const radio of document.querySelectorAll("input[name=objectif], input[name=mode]")) {
   radio.addEventListener("change", synchroniserAffichage);
 }
 
 function lireFormulaire() {
   const cible = document.querySelector("input[name=objectif]:checked").value === "cible";
   return {
+    mode: choixCoche("mode"),
+    duree: Number($("duree").value),
+    rayon: Number($("rayon").value),
+    allureIntervalle: $("allure-intervalle").value,
     distance: Number($("distance").value),
     tolerance: Number($("tolerance").value),
     cible,
@@ -150,6 +170,10 @@ function lireFormulaire() {
 
 function restaurerFormulaire() {
   const r = lireStockage();
+  if (r.mode) cocher("mode", r.mode);
+  if (r.duree) $("duree").value = r.duree;
+  if (r.rayon) $("rayon").value = r.rayon;
+  if (r.allureIntervalle) $("allure-intervalle").value = r.allureIntervalle;
   if (r.distance) $("distance").value = r.distance;
   if (r.tolerance) $("tolerance").value = String(r.tolerance);
   if (r.cible) document.querySelector("input[name=objectif][value=cible]").checked = true;
@@ -193,8 +217,10 @@ $("formulaire").addEventListener("submit", async (e) => {
   afficherMessage("");
   const f = lireFormulaire();
   if (!f.depart) { afficherMessage("Place d'abord le départ en touchant la carte."); return; }
-  const allure = allureEnSecondes(f.allure);
-  if (f.allure && allure === null) { afficherMessage("Allure à écrire sous la forme 6:00."); return; }
+  const cotes = f.mode === "cotes";
+  const texteAllure = cotes ? f.allureIntervalle : f.allure;
+  const allure = allureEnSecondes(texteAllure);
+  if (texteAllure && allure === null) { afficherMessage("Allure à écrire sous la forme 6:00."); return; }
   ecrireStockage(f);
 
   const corps = {
@@ -211,6 +237,9 @@ $("formulaire").addEventListener("submit", async (e) => {
     repetitions: f.intervallesActif ? f.repetitions : null,
     propositions: f.propositions,
     allure_s_par_km: allure,
+    type: f.mode,
+    duree_intervalle_s: Math.round(f.duree * 60),
+    rayon_cotes_km: f.rayon,
   };
   $("generer").disabled = true;
   $("progression").hidden = false;
@@ -224,6 +253,7 @@ $("formulaire").addEventListener("submit", async (e) => {
     });
     const donnees = await reponse.json();
     if (!reponse.ok) throw new Error(lireErreur(donnees));
+    etat.modeCalcul = f.mode;
     suivre(donnees.id);
   } catch (erreur) {
     terminerAttente();
@@ -261,7 +291,9 @@ async function suivre(id) {
   } else if (donnees.etat === "en_cours") {
     $("barre-remplie").style.width = `${Math.round(donnees.avancement * 100)}%`;
     const reste = Math.max(1, Math.round((1 - donnees.avancement) * (etat.infos.budget_s + 3)));
-    $("progression-texte").textContent = `Recherche des meilleures boucles… encore ${reste} s environ`;
+    $("progression-texte").textContent = etat.modeCalcul === "cotes"
+      ? "Recherche des côtes…"
+      : `Recherche des meilleures boucles… encore ${reste} s environ`;
   } else if (donnees.etat === "termine") {
     $("barre-remplie").style.width = "100%";
     terminerAttente();
@@ -279,6 +311,12 @@ async function suivre(id) {
 
 function afficherResultats(id, resultat) {
   etat.propositions = resultat.propositions.map((p) => ({ ...p, idCalcul: id }));
+  if (!etat.propositions.length && resultat.type === "cotes") {
+    $("resultats").hidden = true;
+    afficherMessage("Aucune côte de cette durée trouvée. Essaie une autre durée, une allure " +
+      "différente ou un bas de côte plus loin du départ.");
+    return;
+  }
   if (!etat.propositions.length) {
     $("resultats").hidden = true;
     afficherMessage("Aucune boucle trouvée avec ces réglages. Essaie une autre distance, " +
@@ -292,7 +330,9 @@ function afficherResultats(id, resultat) {
     bouton.className = "onglet";
     bouton.type = "button";
     bouton.setAttribute("role", "tab");
-    bouton.innerHTML = `<strong>${p.dplus_m} m</strong>${km(p.distance_m)} km`;
+    bouton.innerHTML = p.type === "cote"
+      ? `<strong>${p.temps_texte}</strong>${p.distance_m} m · ${String(p.pente_moyenne_pct).replace(".", ",")} %`
+      : `<strong>${p.dplus_m} m</strong>${km(p.distance_m)} km`;
     bouton.addEventListener("click", () => choisir(i));
     onglets.appendChild(bouton);
   });
@@ -338,7 +378,7 @@ function choisir(rang) {
     carte.getSource("trace").setData(segmentsColores(p.points));
     // Une pastille numérotée au sommet de chaque côte.
     etat.marqueursMontees.forEach((m) => m.remove());
-    etat.marqueursMontees = p.montees.map((m) => {
+    etat.marqueursMontees = (p.type === "cote" ? [] : p.montees).map((m) => {
       const pastille = document.createElement("div");
       pastille.textContent = m.numero;
       pastille.title = `${m.nom} : +${m.denivele_m} m`;
@@ -354,6 +394,26 @@ function choisir(rang) {
   carte.fitBounds(bornes, { padding: 40, duration: 600 });
 
   const fiche = $("fiche");
+  if (p.type === "cote") {
+    fiche.innerHTML = `
+    <h3 class="nom-cote">${echapper(p.nom)}</h3>
+    <div class="chiffres">
+      <div class="chiffre"><b>${p.temps_texte}</b><span>par montée (estimé)</span></div>
+      <div class="chiffre"><b>${p.distance_m} m</b><span>longueur</span></div>
+      <div class="chiffre"><b>+${p.denivele_m} m</b><span>dénivelé</span></div>
+      <div class="chiffre"><b>${String(p.pente_moyenne_pct).replace(".", ",")} %</b><span>pente moyenne</span></div>
+      <div class="chiffre"><b>${String(p.pente_max_pct).replace(".", ",")} %</b><span>pente max</span></div>
+      <div class="chiffre"><b>${km(p.approche_m)} km</b><span>depuis le départ</span></div>
+    </div>
+    <svg id="profil" class="profil" role="img" aria-label="Profil d'altitude"></svg>
+    <p id="profil-info" class="profil-info">Glisse le doigt sur le profil pour suivre la carte</p>
+    <a class="bouton-gpx" href="/api/calculs/${p.idCalcul}/gpx/${p.rang}" download>Télécharger la côte (GPX)</a>
+    <p class="astuce">Monte à l'effort, redescends en récupération par le même chemin, et recommence.
+      ${p.part_chemin_pct >= 50 ? "Côte surtout en sentier." : "Côte surtout sur bitume."}
+      ${p.escaliers_m > 0 ? `Attention : ${p.escaliers_m} m d'escaliers.` : ""}</p>`;
+    dessinerProfil(p);
+    return;
+  }
   fiche.innerHTML = `
     <div class="chiffres">
       <div class="chiffre"><b>${km(p.distance_m)} km</b><span>distance</span></div>
@@ -411,9 +471,17 @@ function dessinerProfil(p) {
     html += `<line x1="${marge.gauche}" x2="${largeur - marge.droite}" y1="${Y(z)}" y2="${Y(z)}" stroke="#ece8df"/>`;
     html += `<text x="${marge.gauche - 4}" y="${Y(z) + 3}" font-size="9" text-anchor="end" fill="#5c6560">${z}</text>`;
   }
-  const pasKm = dMax > 20000 ? 5 : dMax > 8000 ? 2 : 1;
-  for (let k = 0; k * 1000 <= dMax; k += pasKm) {
-    html += `<text x="${X(k * 1000)}" y="${hauteur - 6}" font-size="9" text-anchor="middle" fill="#5c6560">${k}</text>`;
+  if (dMax < 3000) {
+    // Côte courte : graduations en mètres.
+    const pasM = dMax > 1200 ? 250 : 100;
+    for (let m = 0; m <= dMax; m += pasM) {
+      html += `<text x="${X(m)}" y="${hauteur - 6}" font-size="9" text-anchor="middle" fill="#5c6560">${m} m</text>`;
+    }
+  } else {
+    const pasKm = dMax > 20000 ? 5 : dMax > 8000 ? 2 : 1;
+    for (let k = 0; k * 1000 <= dMax; k += pasKm) {
+      html += `<text x="${X(k * 1000)}" y="${hauteur - 6}" font-size="9" text-anchor="middle" fill="#5c6560">${k}</text>`;
+    }
   }
   // Aire colorée par la pente.
   for (let i = 1; i < pts.length; i++) {
@@ -436,7 +504,8 @@ function dessinerProfil(p) {
     curseur.setAttribute("x1", X(pt[3]));
     curseur.setAttribute("x2", X(pt[3]));
     curseur.setAttribute("visibility", "visible");
-    $("profil-info").textContent = `km ${km(pt[3])} · ${Math.round(pt[2])} m d'altitude`;
+    const position = dMax < 3000 ? `${Math.round(pt[3])} m` : `km ${km(pt[3])}`;
+    $("profil-info").textContent = `${position} · ${Math.round(pt[2])} m d'altitude`;
     if (!etat.marqueurProfil) {
       const point = document.createElement("div");
       point.style.cssText = "width:14px;height:14px;border-radius:50%;background:#1f3b2d;border:2px solid #fff";

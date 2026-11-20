@@ -33,6 +33,7 @@ class Graphe:
     arc_gain: Tableau  # D+ brut de l'arc, sans seuil
     arc_troncon: Entiers  # position du tronçon dans le réseau d'origine
     arc_chemin: NDArray[np.bool_]  # vrai = sentier ou piste
+    arc_escalier: NDArray[np.bool_]
     cap_debut: Tableau  # direction (vecteur unitaire) au départ de l'arc, forme (arcs, 2)
     cap_fin: Tableau  # direction à l'arrivée
     # Altitudes le long de chaque arc, premier point exclu (c'est le carrefour de départ).
@@ -92,6 +93,8 @@ def construire(
 ) -> Graphe:
     """Prépare le graphe pour une boucle de `distance_m` partant près de (depart_x, depart_y)."""
     nombre = len(reseau.noeud_x)
+    # Pour les côtes pour intervalles, une côte peut finir en cul-de-sac : on les garde.
+    garde_culs_de_sac = reglages.get("culs_de_sac_gardes", False)
     dep, arr = reseau.depart, reseau.arrivee
     garde = dep != arr
     # Pente maximale choisie par la personne (jamais au-delà de la limite « plausible »).
@@ -103,7 +106,8 @@ def construire(
         garde &= reseau.chemin | reseau.escalier
     if not reglages["escaliers"]:
         garde &= ~reseau.escalier
-    garde = sans_culs_de_sac(dep, arr, garde, nombre)
+    if not garde_culs_de_sac:
+        garde = sans_culs_de_sac(dep, arr, garde, nombre)
 
     # Point de départ : le carrefour utilisable le plus proche.
     utilisable = np.zeros(nombre, bool)
@@ -123,7 +127,8 @@ def construire(
     rayon = distance_m * reglages["rayon_max_part"]
     eloignement = dijkstra(matrice, directed=False, indices=origine, limit=rayon)
     garde &= np.isfinite(eloignement[dep]) & np.isfinite(eloignement[arr])
-    garde = sans_culs_de_sac(dep, arr, garde, nombre)
+    if not garde_culs_de_sac:
+        garde = sans_culs_de_sac(dep, arr, garde, nombre)
     matrice = _matrice(dep[garde], arr[garde], reseau.longueur[garde], nombre)
     _, composante = connected_components(matrice, directed=False)
     garde &= composante[dep] == composante[origine]
@@ -178,6 +183,7 @@ def construire(
         arc_gain=arc_gain,
         arc_troncon=np.repeat(troncons, 2),
         arc_chemin=np.repeat(reseau.chemin[troncons], 2),
+        arc_escalier=np.repeat(reseau.escalier[troncons], 2),
         cap_debut=cap_debut,
         cap_fin=cap_fin,
         profils=profils,

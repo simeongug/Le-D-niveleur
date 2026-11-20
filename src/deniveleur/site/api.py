@@ -16,7 +16,7 @@ import logging
 from contextlib import asynccontextmanager
 from importlib import resources
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
@@ -48,6 +48,11 @@ class DemandeWeb(BaseModel):
     repetitions: int | None = Field(default=None, ge=2, le=20)
     propositions: int = Field(default=3, ge=1, le=3)
     allure_s_par_km: float | None = Field(default=None, ge=150, le=1200)
+    # Côtes pour intervalles (type « cotes ») : durée d'une répétition et distance
+    # maximale entre le départ et le bas de la côte.
+    type: Literal["boucle", "cotes"] = "boucle"
+    duree_intervalle_s: float = Field(default=240, ge=30, le=900)
+    rayon_cotes_km: float = Field(default=3, ge=0.5, le=8)
 
 
 def creer_application(
@@ -96,6 +101,7 @@ def creer_application(
             ],
             "depart_defaut": reglages["site"]["depart_defaut"],
             "allure_defaut_s_par_km": reglages["temps"]["allure_plat_s_par_km"],
+            "allure_intervalle_defaut_s_par_km": reglages["cotes"]["allure_s_par_km"],
             "budget_s": reglages["site"]["budget_s"],
             "paliers_pente": reglages["carte"]["paliers_pente"],
             "couleurs_pente": reglages["carte"]["couleurs"],
@@ -110,7 +116,10 @@ def creer_application(
             raise HTTPException(422, "Le départ est en dehors de la zone couverte.")
         if min(x[0] - ouest, est - x[0], y[0] - sud, nord - y[0]) < rayon * 0.3:
             journal.info("Départ proche du bord de la zone : boucles possiblement limitées.")
-        allure = demande.allure_s_par_km or reglages["temps"]["allure_plat_s_par_km"]
+        if demande.type == "cotes":
+            allure = demande.allure_s_par_km or reglages["cotes"]["allure_s_par_km"]
+        else:
+            allure = demande.allure_s_par_km or reglages["temps"]["allure_plat_s_par_km"]
         try:
             calcul = file().soumettre(
                 Demande(
@@ -125,6 +134,9 @@ def creer_application(
                     sans_bitume=demande.sans_bitume,
                     doublons=demande.doublons,
                     repetitions=demande.repetitions,
+                    type=demande.type,
+                    duree_intervalle_s=demande.duree_intervalle_s,
+                    rayon_cotes_m=demande.rayon_cotes_km * 1000,
                     propositions=demande.propositions,
                     allure_s_par_km=allure,
                 )

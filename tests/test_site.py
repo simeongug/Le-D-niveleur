@@ -97,3 +97,16 @@ def test_intervalles(client):
     assert any("3 montées" in alerte for alerte in proposition["alertes"])
     assert len(proposition["montees"]) >= 3
     assert client.post("/api/calculs", json=demande(repetitions=1)).status_code == 422
+
+
+def test_telechargement_fit(client):
+    fini = attendre(client, client.post("/api/calculs", json=demande(repetitions=3)).json()["id"])
+    identifiant = fini["id"]
+    parcours = client.get(f"/api/calculs/{identifiant}/fit/parcours/1")
+    assert parcours.status_code == 200 and parcours.content[8:12] == b".FIT"
+    seance = client.get(f"/api/calculs/{identifiant}/fit/entrainement/1")
+    assert seance.status_code == 200 and seance.content[8:12] == b".FIT"
+    assert client.get(f"/api/calculs/{identifiant}/fit/inconnu/1").status_code == 404
+    simple = attendre(client, client.post("/api/calculs", json=demande()).json()["id"])
+    assert client.get(f"/api/calculs/{simple['id']}/fit/entrainement/1").status_code == 404
+    assert client.get(f"/api/calculs/{simple['id']}/fit/parcours/1").status_code == 200

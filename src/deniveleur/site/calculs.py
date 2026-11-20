@@ -14,7 +14,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Any
 
-from deniveleur import gpx, moteur
+from deniveleur import fit, gpx, moteur
 from deniveleur.moteur import temps
 from deniveleur.moteur.itineraire import Boucle
 from deniveleur.reseau import Reseau
@@ -156,6 +156,15 @@ class FileDeCalculs:
         titre = f"Le Déniveleur — {boucle.distance_m / 1000:.1f} km, D+ {boucle.dplus_m:.0f} m"
         return f"{nom}.gpx", gpx.en_gpx(boucle, titre)
 
+    def fit(self, calcul: Calcul, rang: int, genre: str) -> tuple[str, bytes]:
+        """(nom de fichier, contenu FIT) : `genre` vaut « parcours » ou « entrainement »."""
+        boucle = calcul.boucles[rang - 1]
+        base = f"deniveleur-{boucle.distance_m / 1000:.1f}km-{boucle.dplus_m:.0f}m"
+        titre = f"Deniveleur {boucle.distance_m / 1000:.1f}km"
+        if genre == "entrainement":
+            return f"{base}-seance.fit", fit.entrainement(boucle, titre)
+        return f"{base}-parcours.fit", fit.parcours(boucle, titre)
+
 
 def decrire(
     boucle: Boucle, rang: int, parametres: dict[str, Any], allure_s_par_km: float
@@ -185,6 +194,7 @@ def decrire(
         "temps_s": round(secondes),
         "temps_texte": temps.formater(secondes),
         "alertes": boucle.alertes,
+        "intervalles": boucle.intervalles is not None,
         "montees": [
             {
                 "numero": m.numero,

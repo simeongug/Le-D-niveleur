@@ -93,7 +93,11 @@ def test_mesurer_un_trace_dans_la_pente():
 
     longitudes, latitudes = geo.l93_vers_gps(np.array([100.0, 300.0]), np.array([200.0, 200.0]))
     # Le terrain d'essai est posé à l'origine du Lambert-93 : on mesure en repassant par le GPS.
-    mesure = trace.mesurer(longitudes, latitudes, modele, REGLAGES["profil"])
+    # Un point tous les 5 m monte de 0,5 m : avec le seuil réel de 2 m, chaque « marche »
+    # tomberait pile sur le seuil et l'arrondi (altitudes en float32) déciderait selon la
+    # machine (20 m sous Linux, 18 m sous Windows). Un seuil de 1,8 m laisse 0,2 m de marge.
+    reglages = {**REGLAGES["profil"], "hysteresis_m": 1.8}
+    mesure = trace.mesurer(longitudes, latitudes, modele, reglages)
     assert mesure.distance_m == pytest.approx(200, abs=0.5)
     assert mesure.dplus_m == pytest.approx(20, abs=0.5)
     assert mesure.dmoins_m == 0

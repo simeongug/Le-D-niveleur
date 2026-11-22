@@ -1,7 +1,8 @@
 name: Journal des changements
 
-# À chaque push (sur n'importe quelle branche) et à chaque événement de PR,
-# on ajoute un commentaire dans l'issue « Journal des changements ».
+# À chaque événement de PR (ouverte, fusionnée, fermée…), on ajoute un commentaire
+# dans l'issue « Journal des changements ». Les pushes ne sont plus signalés : tout
+# passe par des PR, et l'issue reçoit aussi les alertes de la surveillance du site.
 # Les personnes abonnées à cette issue (bouton « Subscribe ») reçoivent la
 # notification GitHub (appli mobile ou email), gratuitement.
 #
@@ -9,7 +10,6 @@ name: Journal des changements
 # pour mentionner explicitement ces personnes dans chaque commentaire.
 
 on:
-  push:
   pull_request:
     types: [opened, reopened, ready_for_review, closed]
 

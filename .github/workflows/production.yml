@@ -1,0 +1,48 @@
+name: Production
+
+# La branche « production » contient toujours la dernière version de main dont les
+# vérifications sont vertes. Le serveur installe cette branche (et non main).
+# On n'y pousse jamais à la main : c'est cette action qui l'avance.
+
+on:
+  workflow_run:
+    workflows: ["Vérifications"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  avancer:
+    name: Avancer la branche production
+    runs-on: ubuntu-latest
+    # Seulement après un push sur main (une fusion de PR), et seulement si tout est vert.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Avancer production sur le commit vérifié
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if git rev-parse -q --verify origin/production >/dev/null; then
+            # Les vérifications d'un commit plus ancien peuvent finir après celles d'un
+            # plus récent : production ne recule jamais.
+            if git merge-base --is-ancestor "$SHA" origin/production; then
+              echo "production contient déjà $SHA : rien à faire."
+              exit 0
+            fi
+            if ! git merge-base --is-ancestor origin/production "$SHA"; then
+              echo "::error::production n'est pas un ancêtre de $SHA : on ne force rien."
+              exit 1
+            fi
+          fi
+          git push origin "$SHA:refs/heads/production"
+          echo "production avance sur $SHA."

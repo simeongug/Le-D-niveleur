@@ -1,0 +1,32 @@
+name: Surveillance du site
+
+# Toutes les 30 minutes, on regarde le site en ligne (/sante) et on le compare à la branche
+# production. En cas de problème, un message dans l'issue « Journal des changements »
+# (une seule fois par problème), puis un message quand tout est rentré dans l'ordre.
+# Gratuit (repo public) et sans aucun secret sur le serveur.
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: surveillance-du-site
+  cancel-in-progress: false
+
+jobs:
+  surveiller:
+    name: Vérifier le site en ligne
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comparer le site et la branche production
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SITE: ${{ vars.SITE_URL || 'https://89-168-50-77.sslip.io' }}
+        run: bash deploiement/surveiller.sh

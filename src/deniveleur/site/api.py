@@ -12,8 +12,9 @@ Routes :
     GET  /api/calculs/{id}/fit/entrainement/{n}  séance FIT (intervalles seulement)
 """
 
+import json
 import logging
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from importlib import resources
 from pathlib import Path
 from typing import Any, Literal
@@ -201,8 +202,15 @@ def creer_application(
         )
 
     @app.get("/sante")
-    def sante() -> dict[str, str]:
-        return {"etat": "ok" if "file" in etat else "demarrage"}
+    def sante() -> dict[str, Any]:
+        reponse: dict[str, Any] = {"etat": "ok" if "file" in etat else "demarrage"}
+        reponse["version"] = __version__
+        # Écrit par deploiement/mettre-a-jour.sh : version installée, version refusée…
+        with suppress(OSError, ValueError):
+            reponse["deploiement"] = json.loads(
+                (dossier_donnees / "deploiement.json").read_text("utf-8")
+            )
+        return reponse
 
     @app.get("/", include_in_schema=False)
     def accueil() -> FileResponse:

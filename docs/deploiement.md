@@ -1,9 +1,34 @@
 # Mettre le site en ligne (Oracle Cloud, gratuit)
 
 Le site tourne sur un serveur gratuit d'Oracle Cloud (offre « Always Free »). Une fois
-installé, il se met à jour tout seul : chaque nouvelle version publiée sur la branche
-`main` de GitHub est installée dans les 15 minutes, et les chemins OpenStreetMap sont
+installé, il se met à jour tout seul : chaque nouvelle version de la branche
+`production` est installée dans les 15 minutes, et les chemins OpenStreetMap sont
 rafraîchis une fois par mois.
+
+## Comment une version arrive en ligne
+
+1. Une PR est fusionnée dans `main` (seulement si ses vérifications sont vertes).
+2. Les vérifications repassent sur `main`. Si elles sont vertes, l'action **Production**
+   avance la branche `production` sur ce commit. On n'y pousse jamais à la main.
+3. Dans les 15 minutes, le serveur installe `production`. Avant, il garde une copie du
+   réseau. Après, il vérifie que le site répond (jusqu'à 4 minutes, le temps de charger
+   le réseau).
+4. Si le site ne répond pas, le serveur remet **l'ancien code et l'ancien réseau**, relance
+   le site et note la version comme **refusée** : il ne la réessaie plus et attend que
+   `production` avance sur une correction.
+5. Toutes les 30 minutes, l'action **Surveillance du site** compare le site à
+   `production` et écrit dans l'issue « Journal des changements » si le site ne répond
+   pas, si une version a été refusée ou si le serveur est en retard (puis quand tout est
+   rentré dans l'ordre).
+
+Pour savoir ce qui tourne : `https://<adresse-du-site>/sante` donne l'état, la version
+installée et l'éventuelle version refusée.
+
+Pour réessayer une version refusée (par exemple après un souci passager sur le serveur) :
+
+```bash
+sudo rm /var/lib/deniveleur-maj/refusee && sudo systemctl start deniveleur-maj
+```
 
 ## Ce qu'il faut faire une seule fois
 
@@ -73,6 +98,7 @@ sudo tail -50 /var/log/deniveleur-installation.log   # déroulé de l'installati
 sudo systemctl status deniveleur                      # le site tourne-t-il ?
 sudo journalctl -u deniveleur -n 50                   # ses derniers messages
 sudo journalctl -u deniveleur-maj -n 20               # les dernières mises à jour
+cat /var/lib/deniveleur/deploiement.json              # version installée, version refusée
 ```
 
 Relancer l'installation (sans risque, elle reprend où elle en était) :
@@ -89,7 +115,8 @@ curl -fsSL https://raw.githubusercontent.com/simeongug/Le-D-niveleur/main/deploi
 | `/var/lib/deniveleur` | les données (chemins, altitude, réseau) |
 | service `deniveleur` | le site, relancé automatiquement s'il s'arrête |
 | Caddy | reçoit les visites en `https` et obtient le certificat tout seul |
-| minuteur `deniveleur-maj` | toutes les 15 min : installe la dernière version de `main` |
+| minuteur `deniveleur-maj` | toutes les 15 min : installe la dernière version de `production`, vérifie le site, revient en arrière si besoin |
+| `/var/lib/deniveleur-maj` | copie du réseau avant mise à jour, version refusée |
 | minuteur `deniveleur-donnees` | une fois par mois : retélécharge les chemins OpenStreetMap |
 
 Un seul calcul tourne à la fois (environ 30 s) ; les demandes suivantes attendent leur

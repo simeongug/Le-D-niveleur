@@ -13,6 +13,7 @@ from tests.test_moteur import COTE, depart_gps, reseau_essai
 @pytest.fixture(scope="module")
 def client(tmp_path_factory):
     dossier = tmp_path_factory.mktemp("donnees")
+    (dossier / "deploiement.json").write_text('{"resultat": "ok", "commit": "abc123"}')
     reseau_essai().enregistrer(dossier / "essai")
     reglages = parametres.charger()
     reglages = {**reglages, "site": {**reglages["site"], "budget_s": 2, "file_max": 3}}
@@ -34,6 +35,12 @@ def attendre(client, identifiant, delai_s=40):
 def demande(**autres):
     latitude, longitude = depart_gps()
     return {"latitude": latitude, "longitude": longitude, "distance_km": 5, **autres}
+
+
+def test_sante(client):
+    sante = client.get("/sante").json()
+    assert sante["etat"] == "ok"
+    assert sante["deploiement"]["commit"] == "abc123"
 
 
 def test_page_et_infos(client):

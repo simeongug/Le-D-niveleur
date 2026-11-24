@@ -9,12 +9,14 @@
 #   2. ouvre les ports 80 et 443 du pare-feu du serveur ;
 #   3. récupère le code, prépare les données (environ 5 minutes) ;
 #   4. lance le site et le relance automatiquement en cas de redémarrage ;
-#   5. installe la mise à jour automatique (toutes les 15 min depuis GitHub) et le
+#   5. installe la mise à jour automatique (toutes les 15 min depuis la branche production,
+#      avec vérification du site et retour en arrière en cas de problème) et le
 #      rafraîchissement mensuel des chemins OpenStreetMap.
 set -euo pipefail
 
 DEPOT="${DEPOT:-https://github.com/simeongug/Le-D-niveleur.git}"
-BRANCHE="${BRANCHE:-main}"
+# production = dernière version de main dont les vérifications sont vertes.
+BRANCHE="${BRANCHE:-production}"
 CODE=/opt/deniveleur
 DONNEES=/var/lib/deniveleur
 UTILISATEUR=deniveleur
@@ -31,7 +33,7 @@ fi
 echo "--- 1. Logiciels"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
-apt-get install -y -q python3 python3-venv git curl caddy iptables-persistent
+apt-get install -y -q python3 python3-venv git curl caddy iptables-persistent util-linux
 
 echo "--- 2. Pare-feu du serveur : ports 80 (http) et 443 (https)"
 for port in 80 443; do
@@ -43,10 +45,14 @@ done
 netfilter-persistent save
 
 echo "--- 3. Code et données"
+if ! git ls-remote -q --exit-code --heads "$DEPOT" "$BRANCHE" >/dev/null 2>&1; then
+  echo "La branche $BRANCHE n'existe pas encore : on installe main."
+  BRANCHE=main
+fi
 id "$UTILISATEUR" >/dev/null 2>&1 || useradd --system --home "$DONNEES" --shell /usr/sbin/nologin "$UTILISATEUR"
 mkdir -p "$DONNEES"
 if [[ -d "$CODE/.git" ]]; then
-  git -C "$CODE" fetch -q origin "$BRANCHE"
+  git -C "$CODE" fetch -q origin "+refs/heads/$BRANCHE:refs/remotes/origin/$BRANCHE"
   git -C "$CODE" reset -q --hard "origin/$BRANCHE"
 else
   git clone -q --depth 50 --branch "$BRANCHE" "$DEPOT" "$CODE"

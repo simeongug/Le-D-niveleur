@@ -3,6 +3,12 @@
 Une entrée par PR, la plus récente en haut, 5 lignes au plus : date, PR, ce qui change,
 impact serveur, ce qui reste à faire.
 
+## 22/11/2026 — Serveur : suivre production, vérifier, revenir en arrière
+- Le serveur installe `production` au lieu de `main`, vérifie que le site répond, sinon remet code + réseau et refuse la version.
+- `/sante` affiche la version installée ; l'action « Surveillance du site » prévient dans l'issue du journal.
+- Impact serveur : `deploiement/` (pris en compte tout seul au prochain passage du minuteur). Testé sur un faux serveur (tests/test_deploiement.py).
+- Reste à faire : reconstruire le réseau seulement si ses réglages changent (pas tout parametres.toml).
+
 ## 22/11/2026 — Règles communes et branche production
 - Ajoute `CLAUDE.md` (règles des deux Claude), les journaux, le modèle de PR.
 - Nouvelle action « Production » : avance `production` sur `main` dès que sa CI est verte.
